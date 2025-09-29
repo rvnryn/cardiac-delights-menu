@@ -12,30 +12,38 @@ export interface MenuItem {
   updated_at?: string;
 }
 
+// Add a type for the Supabase realtime payload
+interface SupabaseMenuChangePayload {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  new?: MenuItem;
+  old?: MenuItem;
+}
+
 export function useRealtimeMenu(initialData: MenuItem[]) {
   const [menu, setMenu] = useState<MenuItem[]>(initialData);
   const [connected, setConnected] = useState(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    function handleEvent(payload: any) {
+    function handleEvent(payload: SupabaseMenuChangePayload) {
       const { eventType, new: newRow, old } = payload;
       setMenu((prev) => {
-        if (eventType === "INSERT") {
+        if (eventType === "INSERT" && newRow) {
           if (prev.some((item) => item.menu_id === newRow.menu_id)) return prev;
           return [...prev, newRow].sort(sortMenu);
         }
-        if (eventType === "UPDATE") {
+        if (eventType === "UPDATE" && newRow) {
           return prev
             .map((item) =>
               item.menu_id === newRow.menu_id &&
-              (!item.updated_at || newRow.updated_at > item.updated_at)
+              (!item.updated_at ||
+                (newRow.updated_at && newRow.updated_at > item.updated_at))
                 ? { ...item, ...newRow }
                 : item
             )
             .sort(sortMenu);
         }
-        if (eventType === "DELETE") {
+        if (eventType === "DELETE" && old) {
           return prev.filter((item) => item.menu_id !== old.menu_id);
         }
         return prev;

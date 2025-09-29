@@ -189,7 +189,15 @@ export default function MenuPageLayout({
               <span className="sr-only">Sort</span>
               <select
                 value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as any)}
+                onChange={(e) =>
+                  setSortKey(
+                    e.target.value as
+                      | "featured"
+                      | "priceAsc"
+                      | "priceDesc"
+                      | "alpha"
+                  )
+                }
                 className="text-yellow-900 rounded-xl bg-white/95 px-4 py-2 text-base border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
               >
                 <option value="featured">Featured</option>
