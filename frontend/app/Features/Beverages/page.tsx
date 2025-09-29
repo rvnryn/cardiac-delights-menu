@@ -1,72 +1,65 @@
+"use client";
 import MenuPageLayout from "../components/MenuPageLayout";
+import { useMemo } from "react";
+import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function BeveragesPage() {
-  const items = [
-    { 
-      name: "Bottled Water", 
-      price: 25, 
-      image: "/Bottled_Water.png",
-      description: "Pure refreshing water to cleanse your palate"
-    },
-    { 
-      name: "Mountain Dew", 
-      price: 50, 
-      image: "/Mountain_Dew.png",
-      description: "Citrus-flavored carbonated soft drink"
-    },
-    { 
-      name: "Pineapple Juice", 
-      price: 60, 
-      image: "/Pineapple_Juice.png",
-      description: "Fresh tropical pineapple juice"
-    },
-    { 
-      name: "Coke", 
-      price: 50, 
-      image: "/Coke.png",
-      description: "Classic Coca-Cola refreshment"
-    },
-    { 
-      name: "Coke Zero", 
-      price: 50, 
-      image: "/Coke_Zero.png",
-      description: "Zero sugar, same great Coke taste"
-    },
-    { 
-      name: "Cucumber Iced Tea", 
-      price: 45, 
-      image: "/Cucumber_Iced_Tea.png",
-      description: "Refreshing cucumber-infused iced tea"
-    },
-    { 
-      name: "Sprite", 
-      price: 50, 
-      image: "/Sprite.png",
-      description: "Crisp lemon-lime flavored soda"
-    },
-    { 
-      name: "Royal", 
-      price: 50, 
-      image: "/Royal.png",
-      description: "Orange-flavored carbonated drink"
-    },
-    { 
-      name: "House Blend Iced Tea", 
-      price: 40, 
-      image: "/House_Blend_Iced_Tea.png",
-      description: "Our signature house blend iced tea"
-    },
-  ];
+  const { menu, loading, error } = useMenu();
+
+  const items = useMemo(
+    () =>
+      menu
+        .filter((item) => item.category === "Beverages")
+        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+        .map((item) => ({
+          name: item.dish_name,
+          price: item.price,
+          image: item.image_url || "/fallback-image.png",
+          description: "No description available.",
+        })),
+    [menu]
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-gray-500 py-12">Loading menu...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-red-500 py-12">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <MenuPageLayout
-      title="BEVERAGES"
-      description="Quench your thirst with our refreshing selection of beverages. From classic sodas to specialty iced teas, we have the perfect drink to complement your meal."
+      title={
+        <>
+          <span className="block text-3xl md:text-4xl font-extrabold text-primary-dark mb-2 tracking-tight animate-fade-in">
+            Beverages
+          </span>
+          <span className="block text-base md:text-lg text-primary-dark/70 font-medium animate-fade-in delay-100">
+            Quench your thirst with our refreshing drinks
+          </span>
+        </>
+      }
+      description="Explore our selection of beverages, perfect for any meal."
       items={items}
+      sections={[
+        {
+          title: "All Beverages",
+          items: items,
+        },
+      ]}
       bottomSection={{
-        title: "Always Fresh & Cold!",
-        description: "All our beverages are served ice-cold and fresh. Perfect for washing down our hearty meals or enjoying on their own. Free refills available for iced tea!",
-        badges: ["Ice Cold", "Fresh Daily", "Free Iced Tea Refills", "No Preservatives"]
+        title: "Order with Confidence",
+        description:
+          "All beverages are served chilled and made with quality ingredients. Contact us for special requests!",
+        badges: ["Chilled Drinks", "Fresh Flavors", "Best Value"],
       }}
     />
   );

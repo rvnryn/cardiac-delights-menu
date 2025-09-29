@@ -1,88 +1,59 @@
+"use client";
 import MenuPageLayout from "../components/MenuPageLayout";
+import { useMemo } from "react";
+import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function ExtrasPage() {
-  const riceItems = [
-    { 
-      name: "Plain Rice", 
-      price: 25, 
-      image: "/Plain_Rice.png",
-      description: "Classic steamed jasmine rice - perfect as extra rice"
-    },
-    { 
-      name: "Garlic Rice", 
-      price: 35, 
-      image: "/Garlic_Rice.png",
-      description: "Fragrant rice with crispy garlic bits"
-    },
-    { 
-      name: "Java Rice", 
-      price: 40, 
-      image: "/Java_Rice.png",
-      description: "Colorful turmeric-infused rice"
-    },
-    { 
-      name: "Bagoong Rice", 
-      price: 45, 
-      image: "/Bagoong_Rice.png",
-      description: "Savory rice with fermented shrimp paste"
-    },
-    { 
-      name: "Sizzling Garlic Rice", 
-      price: 50, 
-      image: "/Sizzling_Garlic_Rice.png",
-      description: "Aromatic garlic rice served on a sizzling plate"
-    },
-  ];
+  const { menu, loading, error } = useMenu();
 
-  const sauceItems = [
-    {
-      name: "Kare Kare Sauce",
-      price: 30,
-      image: "/Kare_Kare_Sauce.png",
-      description: "Rich peanut sauce perfect for dipping"
-    },
-    {
-      name: "Chili Sauce",
-      price: 15,
-      image: "/Chili_Sauce.png",
-      description: "Spicy chili sauce to add heat to any dish"
-    },
-  ];
+  const items = useMemo(
+    () =>
+      menu
+        .filter((item) => item.category === "Extras")
+        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+        .map((item) => ({
+          name: item.dish_name,
+          price: item.price,
+          image: item.image_url || "/fallback-image.png",
+          description: "No description available.",
+        })),
+    [menu]
+  );
 
-  const eggItems = [
-    {
-      name: "Egg",
-      price: 20,
-      image: "/egg.jpg",
-      description: "Fresh boiled egg"
-    },
-  ];
-
-  const sections = [
-    {
-      title: "Rice Varieties",
-      items: riceItems
-    },
-    {
-      title: "Sauces & Condiments",
-      items: sauceItems
-    },
-    {
-      title: "Eggs",
-      items: eggItems
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-gray-500 py-12">Loading menu...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-red-500 py-12">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <MenuPageLayout
-      title="EXTRAS"
-      description="Complete your meal with our selection of extras! From additional rice servings to flavorful sauces, customize your dining experience to your heart's content."
-      sections={sections}
-      items={[]} // Not used when sections are provided
+      title={
+        <>
+          <span className="block text-3xl md:text-4xl font-extrabold text-primary-dark mb-2 tracking-tight animate-fade-in">
+            Extras
+          </span>
+          <span className="block text-base md:text-lg text-primary-dark/70 font-medium animate-fade-in delay-100">
+            Complete your meal with our delicious extras
+          </span>
+        </>
+      }
+      description="Choose from a variety of rice, sauces, and more to complement your meal."
+      items={items}
       bottomSection={{
-        title: "Customize Your Perfect Meal!",
-        description: "Mix and match our extras to create your ideal dining experience. All rice is freshly cooked, sauces are made in-house, and everything is served at the perfect temperature!",
-        badges: ["Fresh Rice", "House-made Sauces", "Hot & Fresh", "Affordable Add-ons"]
+        title: "Enhance Your Experience",
+        description:
+          "Our extras are freshly prepared to make every meal special. Let us know if you have special requests!",
+        badges: ["Freshly Made", "Customizable", "Perfect Pairings"],
       }}
     />
   );

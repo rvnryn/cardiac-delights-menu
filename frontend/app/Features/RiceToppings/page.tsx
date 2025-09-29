@@ -1,72 +1,65 @@
+"use client";
 import MenuPageLayout from "../components/MenuPageLayout";
+import { useMemo } from "react";
+import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function RiceToppingsPage() {
-  const items = [
-    { 
-      name: "Bagsilog", 
-      price: 170, 
-      image: "/Bagnet_Silog.png",
-      description: "Crispy bagnet with garlic rice and fried egg"
-    },
-    { 
-      name: "Beef Toppings Rice", 
-      price: 175, 
-      image: "/Bagnet_Bagoong_Rice.png",
-      description: "Tender beef with savory bagoong rice"
-    },
-    { 
-      name: "Beef Sisig Rice w/ Egg", 
-      price: 250, 
-      image: "/Tapa_Langit_Nawa.png",
-      description: "Sizzling beef sisig with rice and egg"
-    },
-    { 
-      name: "Sizzling Bagnet", 
-      price: 185, 
-      image: "/Kare-Kareng_Bagnet.png",
-      description: "Crispy bagnet in rich kare-kare sauce"
-    },
-    { 
-      name: "Tapa Sisig Sizzling Plate", 
-      price: 190, 
-      image: "/Triple_Bypass.png",
-      description: "Sizzling tapa sisig that's dangerously delicious"
-    },
-    { 
-      name: "Sizzling Sisig", 
-      price: 175, 
-      image: "/High_Blood.png",
-      description: "Classic sizzling sisig with onions and chili"
-    },
-    { 
-      name: "Sizzling Bangus", 
-      price: 270, 
-      image: "/Talong_at_Binagoongan.png",
-      description: "Fresh bangus with eggplant and bagoong"
-    },
-    { 
-      name: "Crispy Pata Rice", 
-      price: 630, 
-      image: "/CPR.png",
-      description: "Whole crispy pork leg with rice - CPR special"
-    },
-    { 
-      name: "Crispy Bicol Express Rice", 
-      price: 185, 
-      image: "/Code_Red.png",
-      description: "Spicy Bicol Express with crispy pork and rice"
-    },
-  ];
+  const { menu, loading, error } = useMenu();
+
+  const items = useMemo(
+    () =>
+      menu
+        .filter((item) => item.category === "Rice Toppings")
+        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+        .map((item) => ({
+          name: item.dish_name,
+          price: item.price,
+          image: item.image_url || "/fallback-image.png",
+          description: "No description available.",
+        })),
+    [menu]
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-gray-500 py-12">Loading menu...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-red-500 py-12">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <MenuPageLayout
-      title="RICE TOPPINGS"
-      description="Hearty rice meals topped with our signature dishes. Each serving comes with perfectly cooked rice and your choice of delicious toppings."
+      title={
+        <>
+          <span className="block text-3xl md:text-4xl font-extrabold text-primary-dark mb-2 tracking-tight animate-fade-in">
+            Rice Toppings
+          </span>
+          <span className="block text-base md:text-lg text-primary-dark/70 font-medium animate-fade-in delay-100">
+            Satisfy your cravings with our savory rice toppings selection
+          </span>
+        </>
+      }
+      description="Explore our variety of rice toppings, each crafted to delight your taste buds."
       items={items}
+      sections={[
+        {
+          title: "Rice Toppings",
+          items: items,
+        },
+      ]}
       bottomSection={{
-        title: "Unlimited Rice & Free Soup!",
-        description: "All our rice toppings are served with unlimited rice and come with complimentary soup. Perfect for hearty appetites!",
-        badges: ["Unlimited Rice", "Free Soup", "Fresh Daily", "Generous Portions"]
+        title: "Order with Confidence",
+        description:
+          "All rice toppings are made with the freshest ingredients. Contact us for special requests!",
+        badges: ["Fresh Ingredients", "Hearty Meals", "Best Value"],
       }}
     />
   );

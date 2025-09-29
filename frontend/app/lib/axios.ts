@@ -1,11 +1,9 @@
-import axios from 'axios';
+import axios from "axios";
 
-// Create an axios instance
-const axiosInstance = axios.create({
-     baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
-     timeout: 0,
-     headers: {
-          'Content-Type': 'application/json',
-     },
+const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000";
+
+const api = axios.create({
+  baseURL,
 });
-export default axiosInstance;
+
+export default api;

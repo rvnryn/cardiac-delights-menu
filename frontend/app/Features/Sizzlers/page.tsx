@@ -1,78 +1,65 @@
+"use client";
 import MenuPageLayout from "../components/MenuPageLayout";
+import { useMemo } from "react";
+import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function SizzlersPage() {
-  const items = [
-    { 
-      name: "Bagnet Sisig", 
-      price: 190, 
-      image: "/Bagnet_Sisig.png",
-      description: "Crispy bagnet sisig with onions and peppers"
-    },
-    { 
-      name: "Beef Pares", 
-      price: 190, 
-      image: "/Beef_Pares.png",
-      description: "Tender beef pares in sweet soy sauce"
-    },
-    { 
-      name: "Mild Stroke", 
-      price: 290, 
-      image: "/Mild_Stroke.png",
-      description: "Mildly spiced sizzling dish that's heart-stopping"
-    },
-    { 
-      name: "Brain Damage", 
-      price: 300, 
-      image: "/Brain_Damage.png",
-      description: "Intensely flavored dish that'll blow your mind"
-    },
-    { 
-      name: "Last Supper", 
-      price: 315, 
-      image: "/Last_Supper.png",
-      description: "The ultimate sizzling experience - proceed with caution"
-    },
-    { 
-      name: "Sizzling Garlic Rice", 
-      price: 195, 
-      image: "/Sizzling_Garlic_Rice.png",
-      description: "Aromatic garlic rice served sizzling hot"
-    },
-    { 
-      name: "Liemposuction", 
-      price: 210, 
-      image: "/Liemposuction.png",
-      description: "Crispy liempo that'll suck the life out of you"
-    },
-    { 
-      name: "Liemphoma", 
-      price: 210, 
-      image: "/Liemphoma.png",
-      description: "Dangerously addictive crispy pork belly"
-    },
-    { 
-      name: "The Goutfather", 
-      price: 250, 
-      image: "/The Goutfather.png",
-      description: "Rich and indulgent - the don of all sizzlers"
-    },
-    { 
-      name: "Final Destination", 
-      price: 270, 
-      image: "/Final_Destination.png",
-      description: "The end of the line - our most extreme sizzler"
-    },
-  ];
+  const { menu, loading, error } = useMenu();
+
+  const items = useMemo(
+    () =>
+      menu
+        .filter((item) => item.category === "Sizzlers")
+        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+        .map((item) => ({
+          name: item.dish_name,
+          price: item.price,
+          image: item.image_url || "/fallback-image.png",
+          description: "No description available.",
+        })),
+    [menu]
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-gray-500 py-12">Loading menu...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-red-500 py-12">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <MenuPageLayout
-      title="SIZZLERS"
-      description="Hot sizzling plates that arrive at your table still cooking! Each dish is served on a cast iron plate with rice and vegetables. Warning: These dishes are dangerously delicious!"
+      title={
+        <>
+          <span className="block text-3xl md:text-4xl font-extrabold text-primary-dark mb-2 tracking-tight animate-fade-in">
+            Sizzlers
+          </span>
+          <span className="block text-base md:text-lg text-primary-dark/70 font-medium animate-fade-in delay-100">
+            Sizzling specialties to excite your taste buds
+          </span>
+        </>
+      }
+      description="Explore our mouthwatering sizzler dishes, served hot and full of flavor."
       items={items}
+      sections={[
+        {
+          title: "Sizzler Dishes",
+          items: items,
+        },
+      ]}
       bottomSection={{
-        title: "Sizzling Hot Warning!",
-        description: "All sizzlers are served on extremely hot cast iron plates. Please be careful when handling. Each order comes with rice, vegetables, and our signature sauce.",
-        badges: ["Cast Iron Plate", "With Rice", "Fresh Vegetables", "Signature Sauce"]
+        title: "Order Your Sizzler",
+        description:
+          "Prepared fresh and served sizzling. Ask us about our sizzler specials!",
+        badges: ["Sizzling Hot", "Freshly Made", "Customer Favorites"],
       }}
     />
   );

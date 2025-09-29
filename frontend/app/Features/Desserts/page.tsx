@@ -1,42 +1,65 @@
+"use client";
 import MenuPageLayout from "../components/MenuPageLayout";
+import { useMemo } from "react";
+import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function DessertsPage() {
-  const items = [
-    { 
-      name: "Lecheng Saging", 
-      price: 140, 
-      image: "/Lecheng_Saging.png",
-      description: "Creamy leche flan with sweet banana topping"
-    },
-    { 
-      name: "Lecheng Mais", 
-      price: 120, 
-      image: "/Lecheng_Mais.png",
-      description: "Smooth leche flan with sweet corn kernels"
-    },
-    { 
-      name: "Lecheng Coffee Jelly", 
-      price: 130, 
-      image: "/Lecheng_Coffee_Jelly.png",
-      description: "Rich leche flan with coffee jelly cubes"
-    },
-    { 
-      name: "Nagkanda Leche-Leche", 
-      price: 180, 
-      image: "/Nagkanda_Leche-Leche.png",
-      description: "Double leche dessert that's absolutely irresistible"
-    },
-  ];
+  const { menu, loading, error } = useMenu();
+
+  const items = useMemo(
+    () =>
+      menu
+        .filter((item) => item.category === "Desserts")
+        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+        .map((item) => ({
+          name: item.dish_name,
+          price: item.price,
+          image: item.image_url || "/fallback-image.png",
+          description: "No description available.",
+        })),
+    [menu]
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-gray-500 py-12">Loading menu...</div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
+        <div className="text-center text-red-500 py-12">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <MenuPageLayout
-      title="DESSERTS"
-      description="End your meal on a sweet note with our delicious desserts! Our signature leche desserts are made fresh daily and served chilled. Perfect for sharing or enjoying solo!"
+      title={
+        <>
+          <span className="block text-3xl md:text-4xl font-extrabold text-primary-dark mb-2 tracking-tight animate-fade-in">
+            Desserts
+          </span>
+          <span className="block text-base md:text-lg text-primary-dark/70 font-medium animate-fade-in delay-100">
+            Sweet treats to end your meal
+          </span>
+        </>
+      }
+      description="Indulge in our delightful dessert selection, crafted to satisfy your sweet cravings."
       items={items}
+      sections={[
+        {
+          title: "All Desserts",
+          items: items,
+        },
+      ]}
       bottomSection={{
-        title: "Sweet Endings!",
-        description: "Our leche desserts are made fresh daily using traditional recipes and the finest ingredients. Each dessert is served chilled and perfectly portioned for the ultimate sweet experience!",
-        badges: ["Fresh Daily", "Chilled Desserts", "Traditional Recipes", "Perfect Portions"]
+        title: "Order with Confidence",
+        description:
+          "All desserts are made with the freshest ingredients. Contact us for special requests!",
+        badges: ["Fresh Ingredients", "Homemade", "Best Value"],
       }}
     />
   );
