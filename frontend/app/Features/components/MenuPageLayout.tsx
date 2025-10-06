@@ -66,6 +66,17 @@ export default function MenuPageLayout({
     "featured" | "priceAsc" | "priceDesc" | "alpha"
   >("featured");
   const [dense, setDense] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Responsive detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Sync with hash (deep-linking to sections)
   useEffect(() => {
@@ -145,104 +156,108 @@ export default function MenuPageLayout({
   return (
     <main className="min-h-screen lg:ml-64">
       {/* Page Header */}
-      <header className="py-fluid-lg lg:py-fluid-xl">
-        <div className="container-fluid">
-          <div className="text-center mb-fluid-xl animate-fade-in">
-            <h1 className="text-fluid-4xl md:text-fluid-5xl lg:text-fluid-6xl font-extrabold leading-tight mb-fluid-md drop-shadow-lg text-black">
+      <header className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-4 sm:mb-6 animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-tight mb-3 sm:mb-4 drop-shadow-lg text-black">
               {title}
             </h1>
-            <div className="flex justify-center mb-fluid-md" aria-hidden>
-              <div className="w-[50%] h-1 rounded-full bg-black shadow-[0_0_15px_rgba(234,179,8,0.8)]"></div>
+            <div className="flex justify-center mb-3 sm:mb-4" aria-hidden>
+              <div className="w-24 sm:w-32 md:w-40 lg:w-48 h-1 rounded-full bg-black shadow-[0_0_15px_rgba(234,179,8,0.8)]"></div>
             </div>
-            <p className="text-fluid-lg md:text-fluid-xl text-black/90 max-w-3xl mx-auto leading-relaxed mb-fluid-md">
+            <p className="text-lg sm:text-xl md:text-2xl text-black/90 max-w-4xl mx-auto leading-relaxed px-4">
               {description}
             </p>
           </div>
         </div>
       </header>
-      {/* Sticky Toolbar */}
-      <div className="sticky top-0 z-30 flex justify-center px-2"></div>
-      <div className="w-full py-4 flex flex-col gap-4 mt-8 md:flex-row md:items-center md:justify-between px-6 bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md border-y border-yellow-900/20 rounded-2xl shadow-xl ring-1 ring-yellow-900/10">
-        {/* Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto items-center">
-          {/* Search */}
-          <label className="relative col-span-2 w-5xl flex items-center group">
-            <span className="sr-only">Search menu</span>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search dishes…"
-              className="text-black w-full rounded-xl bg-white/95 px-5 py-2.5 pr-14 text-base shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
-              aria-label="Search menu"
-              autoComplete="off"
-            />
-            <span className="absolute right-4 flex items-center gap-1">
-              <span className="text-xl text-yellow-900">
-                <MdSearch />
-              </span>
-            </span>
-          </label>
+      {/* Sticky Toolbar - Mobile First Design */}
+      <div className="sticky top-0 z-30 px-4 sm:px-6 lg:px-8 pb-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-md border border-yellow-900/20 rounded-2xl shadow-xl p-3 sm:p-4">
+            {/* Search Bar - Full Width */}
+            <div className="mb-3">
+              <label className="relative w-full flex items-center group">
+                <span className="sr-only">Search menu</span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search dishes…"
+                  className="w-full rounded-xl bg-white/95 px-4 sm:px-5 py-3 pr-12 sm:pr-14 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
+                  aria-label="Search menu"
+                  autoComplete="off"
+                />
+                <span className="absolute right-3 sm:right-4 flex items-center">
+                  <MdSearch className="text-xl text-yellow-900" />
+                </span>
+              </label>
+            </div>
 
-          {/* Sort & Density */}
-          <div className="flex items-center w-sm justify-between gap-2 sm:justify-end">
-            <label className="relative">
-              <span className="sr-only">Sort</span>
-              <select
-                value={sortKey}
-                onChange={(e) =>
-                  setSortKey(
-                    e.target.value as
-                      | "featured"
-                      | "priceAsc"
-                      | "priceDesc"
-                      | "alpha"
-                  )
-                }
-                className="text-yellow-900 rounded-xl bg-white/95 px-4 py-2 text-base border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
-              >
-                <option value="featured">Featured</option>
-                <option value="priceAsc">Price: Low to High</option>
-                <option value="priceDesc">Price: High to Low</option>
-                <option value="alpha">Alphabetical</option>
-              </select>
-            </label>
+            {/* Sort Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <label className="relative flex-1 sm:max-w-xs">
+                <span className="sr-only">Sort</span>
+                <select
+                  value={sortKey}
+                  onChange={(e) =>
+                    setSortKey(
+                      e.target.value as
+                        | "featured"
+                        | "priceAsc"
+                        | "priceDesc"
+                        | "alpha"
+                    )
+                  }
+                  className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                >
+                  <option value="featured">Featured</option>
+                  <option value="priceAsc">Price: Low to High</option>
+                  <option value="priceDesc">Price: High to Low</option>
+                  <option value="alpha">Alphabetical</option>
+                </select>
+              </label>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <section
-        className="container-fluid py-8"
+        className="px-4 sm:px-6 lg:px-8 pt-4 pb-8"
         aria-live="polite"
         aria-busy={false}
       >
-        <h2 className="sr-only">{sectionList[activeSection]?.title}</h2>
-        <MenuGrid
-          items={filteredItems}
-          currencyFmt={currencyFmt}
-          dense={dense}
-        />
+        <div className="max-w-7xl mx-auto">
+          <h2 className="sr-only">{sectionList[activeSection]?.title}</h2>
+          <MenuGrid
+            items={filteredItems}
+            currencyFmt={currencyFmt}
+            dense={dense}
+          />
+        </div>
       </section>
 
       {/* Bottom Section */}
-      <footer className="w-full pb-16 mt-12 flex justify-center">
-        <div className="text-center animate-fade-in w-full max-w-2xl px-2">
-          <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-sm rounded-2xl p-8 flex flex-col items-center shadow-lg">
-            <h3 className="text-2xl font-bold text-white mb-4">
-              {bottomSection.title}
-            </h3>
-            <p className="text-base text-white/80 leading-relaxed mb-6">
-              {bottomSection.description}
-            </p>
-            <div className="flex flex-wrap justify-center gap-3 mb-4">
-              {bottomSection.badges.map((badge, index) => (
-                <span
-                  key={index}
-                  className="bg-gradient-to-br from-yellow-500/95 to-yellow-600/95 text-black px-4 py-2 rounded-full text-sm font-medium shadow border border-white/10"
-                >
-                  {badge}
-                </span>
-              ))}
+      <footer className="px-4 sm:px-6 lg:px-8 pb-16 mt-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center animate-fade-in">
+            <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 flex flex-col items-center shadow-lg">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">
+                {bottomSection.title}
+              </h3>
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-6 max-w-2xl">
+                {bottomSection.description}
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                {bottomSection.badges.map((badge, index) => (
+                  <span
+                    key={index}
+                    className="bg-gradient-to-br from-yellow-500/95 to-yellow-600/95 text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow border border-white/10"
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -263,10 +278,12 @@ function MenuGrid({
 }) {
   if (!items.length) {
     return (
-      <div className="grid place-items-center py-20 text-center">
-        <div className="max-w-md">
-          <p className="text-lg font-semibold text-black">No matching items</p>
-          <p className="text-black/70 text-sm">
+      <div className="flex items-center justify-center py-16 sm:py-20 lg:py-24">
+        <div className="text-center max-w-md mx-auto px-4">
+          <p className="text-lg sm:text-xl font-semibold text-black mb-2">
+            No matching items
+          </p>
+          <p className="text-black/70 text-sm sm:text-base">
             Try clearing filters or using a different search term.
           </p>
         </div>
@@ -276,9 +293,16 @@ function MenuGrid({
 
   return (
     <ul
-      className={`grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 px-2 md:px-0 ${
-        dense ? "sm:grid-cols-3 xl:grid-cols-5 gap-3" : ""
-      }`}
+      className="
+        grid gap-4 sm:gap-6 lg:gap-8
+        grid-cols-1 
+        xs:grid-cols-2 
+        sm:grid-cols-2 
+        md:grid-cols-3 
+        lg:grid-cols-4 
+        xl:grid-cols-5 
+        2xl:grid-cols-6
+      "
       role="list"
     >
       {items.map((item, index) => (
@@ -304,16 +328,21 @@ function MenuCard({
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   return (
-    // ...existing code...
     <article
       ref={cardRef}
-      className="group bg-gradient-to-br from-gray-900/95 to-black/95 rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 transition-all duration-300 focus-within:ring-2 focus-within:ring-black/20 supports-[prefers-reduced-motion:no-preference]:hover:shadow-2xl supports-[prefers-reduced-motion:no-preference]:hover:-translate-y-0.5"
+      className="
+        group bg-gradient-to-br from-gray-900/95 to-black/95 
+        rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg ring-1 ring-black/5 
+        transition-all duration-300 focus-within:ring-2 focus-within:ring-black/20 
+        hover:shadow-2xl hover:-translate-y-1
+        h-full flex flex-col
+      "
       tabIndex={-1}
       aria-label={item.name}
       style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Image */}
-      <div className="relative overflow-hidden aspect-[4/3] bg-black/5 text-white">
+      {/* Image - Consistent aspect ratio */}
+      <div className="relative overflow-hidden aspect-[4/3] bg-black/5 text-white flex-shrink-0">
         {!loaded && (
           <div
             className="absolute inset-0 animate-pulse bg-black/5"
@@ -324,20 +353,20 @@ function MenuCard({
           src={item.image}
           alt={`${item.name}. ${item.description}`}
           fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-          className="object-cover object-center transition-transform duration-500 supports-[prefers-reduced-motion:no-preference]:group-hover:scale-105"
-          priority={index < 4}
-          onLoadingComplete={() => setLoaded(true)}
+          sizes="(max-width: 475px) 100vw, (max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, (max-width: 1536px) 20vw, 16vw"
+          className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          priority={index < 8}
+          onLoad={() => setLoaded(true)}
         />
         <div
-          className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 via-black/0 to-transparent pointer-events-none"
+          className="absolute inset-x-0 bottom-0 h-16 sm:h-20 md:h-24 bg-gradient-to-t from-black/60 via-black/0 to-transparent pointer-events-none"
           aria-hidden
         />
 
         {/* Price Badge */}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
           <div
-            className="rounded-full bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur px-3 py-1.5 text-sm font-semibold shadow border border-black/10"
+            className="rounded-full bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold shadow border border-black/10 text-white"
             aria-label={`Price ${price}`}
           >
             {price}
@@ -345,32 +374,34 @@ function MenuCard({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-5 md:p-6 flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="font-bold text-lg md:text-xl text-white leading-tight">
+      {/* Content - Flexible height */}
+      <div className="p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col gap-2 sm:gap-3 flex-grow">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
+          <h3 className="font-bold text-sm sm:text-base md:text-lg lg:text-xl text-white leading-tight flex-grow">
             <span className="line-clamp-2">{item.name}</span>
           </h3>
         </div>
-        <p className="text-sm text-white/70 leading-relaxed line-clamp-3">
+        <p className="text-xs sm:text-sm text-white/70 leading-relaxed line-clamp-3 flex-grow">
           {item.description}
         </p>
 
         {/* Tags */}
         {item.tags?.length ? (
           <ul
-            className="mt-1 flex flex-wrap gap-2"
+            className="mt-auto flex flex-wrap gap-1 sm:gap-2"
             aria-label="Item attributes"
           >
-            {item.tags.map((t) => (
+            {item.tags.slice(0, 3).map((t) => (
               <li
                 key={t}
-                className="text-xs rounded-full bg-black/5 text-white
-                /70 px-2 py-1 border border-black/10"
+                className="text-xs rounded-full bg-black/5 text-white/70 px-2 py-1 border border-black/10"
               >
                 {t}
               </li>
             ))}
+            {item.tags.length > 3 && (
+              <li className="text-xs text-white/50">+{item.tags.length - 3}</li>
+            )}
           </ul>
         ) : null}
       </div>

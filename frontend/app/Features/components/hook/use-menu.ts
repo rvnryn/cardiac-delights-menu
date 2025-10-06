@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import api from "@/app/lib/axios";
 
 export interface MenuItem {
   menu_id: number;
@@ -20,10 +19,16 @@ export function useMenu() {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    api
-      .get("/api/menu")
-      .then((res) => {
-        if (mounted) setMenu(res.data);
+
+    fetch("/api/menu")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (mounted) setMenu(data);
         setError(null);
       })
       .catch((err) => {
@@ -33,6 +38,7 @@ export function useMenu() {
       .finally(() => {
         if (mounted) setLoading(false);
       });
+
     return () => {
       mounted = false;
     };

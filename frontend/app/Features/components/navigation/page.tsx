@@ -121,7 +121,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative overflow-hidden shadow-lgbg-gradient-to-br from-yellow-400/5 via-transparent to-yellow-300/3">
               <Image
-                src="/logo2.png"
+                src="/logo.png"
                 alt="Cardiac Delights Logo"
                 width={42}
                 height={42}
@@ -194,9 +194,9 @@ export default function Navbar() {
         {/* Header */}
         <header className="flex items-center justify-between px-5 py-4 border-b border-yellow-400/20 bg-gradient-to-r from-black/60 via-black/50 to-black/60 backdrop-blur-xl">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="relative rounded-xl overflow-hidden shadow-lg border border-yellow-400/20 bg-gradient-to-br from-yellow-400/5 via-transparent to-yellow-300/3">
+            <div className="relative rounded-xl overflow-hidden shadow-lg  bg-gradient-to-br from-yellow-400/5 via-transparent to-yellow-300/3">
               <Image
-                src="/cardiac_logo.png"
+                src="/logo.png"
                 alt="Cardiac Delights Logo"
                 width={42}
                 height={42}
