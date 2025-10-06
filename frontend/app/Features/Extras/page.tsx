@@ -20,21 +20,6 @@ export default function ExtrasPage() {
     [menu]
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
-        <div className="text-center text-gray-500 py-12">Loading menu...</div>
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
-        <div className="text-center text-red-500 py-12">{error}</div>
-      </div>
-    );
-  }
-
   return (
     <MenuPageLayout
       title={
@@ -55,6 +40,8 @@ export default function ExtrasPage() {
           "Our extras are freshly prepared to make every meal special. Let us know if you have special requests!",
         badges: ["Freshly Made", "Customizable", "Perfect Pairings"],
       }}
+      loading={loading}
+      error={error}
     />
   );
 }

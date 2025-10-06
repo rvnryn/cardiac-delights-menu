@@ -20,21 +20,6 @@ export default function DessertsPage() {
     [menu]
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
-        <div className="text-center text-gray-500 py-12">Loading menu...</div>
-      </div>
-    );
-  }
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-yellow">
-        <div className="text-center text-red-500 py-12">{error}</div>
-      </div>
-    );
-  }
-
   return (
     <MenuPageLayout
       title={
@@ -61,6 +46,8 @@ export default function DessertsPage() {
           "All desserts are made with the freshest ingredients. Contact us for special requests!",
         badges: ["Fresh Ingredients", "Homemade", "Best Value"],
       }}
+      loading={loading}
+      error={error}
     />
   );
 }

@@ -140,16 +140,109 @@ export default function MenuPageLayout({
 
   if (loading) {
     return (
-      <main className="min-h-screen lg:ml-64 flex items-center justify-center bg-primary-yellow">
-        <div className="text-center text-gray-500 py-12">Loading menu...</div>
-      </main>
+      <div className="min-h-screen lg:ml-64 flex items-center justify-center">
+        <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-yellow-200/50 max-w-md w-full mx-auto">
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-600 flex items-center justify-center shadow-lg">
+                <svg
+                  className="animate-spin h-8 w-8 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full blur opacity-30 animate-pulse"></div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold text-white">Loading Menu</h3>
+              <div className="space-y-2">
+                <p className="text-white font-medium">
+                  Fetching the latest dishes
+                </p>
+                <p className="text-sm text-white">Please wait a moment...</p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
+
   if (error) {
     return (
-      <main className="min-h-screen lg:ml-64 flex items-center justify-center bg-primary-yellow">
-        <div className="text-center text-red-500 py-12">{error}</div>
-      </main>
+      <div className="min-h-screen lg:ml-64 flex items-center justify-center">
+        <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-red-200/50 max-w-md w-full mx-auto">
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center shadow-lg">
+                <svg
+                  className="h-8 w-8 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-red-500 to-red-600 rounded-full blur opacity-30"></div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold text-white">
+                Something Went Wrong
+              </h3>
+              <div className="space-y-2">
+                <p className="text-white font-medium">Unable to load menu</p>
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                  {error}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <button
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-200 shadow-lg"
+                onClick={() => window.location.reload()}
+              >
+                Try Again
+              </button>
+              <button
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-gray-200 shadow-lg"
+                onClick={() => window.history.back()}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
