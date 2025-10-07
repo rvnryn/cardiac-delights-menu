@@ -5,18 +5,14 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import {
   FaUtensils,
-  FaFireAlt,
-  FaMugHot,
   FaIceCream,
-  FaGlassWhiskey,
   FaPlusCircle,
   FaChevronRight,
-  FaBars,
   FaTimes,
 } from "react-icons/fa";
 import type { ReactElement } from "react";
 import { routes } from "@/app/routes/routes";
-import { FaBowlFood, FaBowlRice } from "react-icons/fa6";
+import { FaBowlRice } from "react-icons/fa6";
 import { MdRamenDining } from "react-icons/md";
 // import { GiSizzlingPot } from "react-icons/gi";
 import { GiCookingPot, GiSodaCan } from "react-icons/gi";

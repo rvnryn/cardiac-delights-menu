@@ -101,7 +101,7 @@ export function useMenu(category?: string, fields?: string) {
       saveToOfflineStorage(data);
 
       setMenu(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("Network request failed, trying offline storage:", err);
 
       // Try to load from offline storage first (your actual menu data)
