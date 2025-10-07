@@ -15,7 +15,7 @@ export default function DessertsPage() {
           name: item.dish_name,
           price: item.price,
           image: item.image_url || "/fallback-image.png",
-          description: "No description available.",
+          description: item.description || "No description available.",
         })),
     [menu]
   );

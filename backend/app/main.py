@@ -12,7 +12,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://cardiac-delights-menu-17tg.vercel.app",
+        "https://cardiac-delights-menu.vercel.app",
         "http://localhost:3000",
     ],  # Allow all origins for development
     allow_credentials=True,
@@ -27,7 +27,6 @@ async def health_check():
     return {"status": "ok"}
 
 
-# API: GET /api/menu
 @app.get("/api/menu")
 async def get_menu(
     category: Optional[str] = Query(None), inStockOnly: Optional[bool] = Query(False)
@@ -43,7 +42,7 @@ async def get_menu(
     return JSONResponse(content=res.data, headers=headers)
 
 
-# API: GET /api/menu/{menu_id}
+
 @app.get("/api/menu/{menu_id}")
 async def get_menu_item(menu_id: int):
     res = supabase.table("menu").select("*").eq("menu_id", menu_id).single().execute()

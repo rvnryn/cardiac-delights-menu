@@ -94,11 +94,14 @@ export default function Navbar() {
       {/* Mobile menu button */}
       {isMobile && !isMenuOpen && (
         <button
-          className="fixed top-4 left-4 z-50 p-2 rounded-xl bg-gradient-to-br from-slate-900/90 via-black/90 to-gray-800/90 border border-yellow-400/20 shadow-xl hover:border-yellow-400/30 hover:shadow-yellow-400/10 backdrop-blur-lg transition-all duration-300"
+          className="fixed top-4 left-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-br from-slate-900/90 via-black/90 to-gray-800/90 border border-yellow-400/20 shadow-xl hover:border-yellow-400/30 hover:shadow-yellow-400/10 backdrop-blur-lg transition-all duration-300"
           onClick={() => setIsMenuOpen(true)}
-          aria-label="Open menu"
+          aria-label="Open food categories"
         >
-          <FaBars className="text-yellow-500" size={25} />
+          <FaUtensils className="text-yellow-500" size={20} />
+          <span className="text-yellow-100 font-medium text-sm whitespace-nowrap">
+            Food Categories
+          </span>
         </button>
       )}
 

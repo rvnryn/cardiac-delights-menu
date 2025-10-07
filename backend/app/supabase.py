@@ -18,7 +18,7 @@ POSTGRES_URL = os.getenv("POSTGRES_URL")
 engine = create_async_engine(POSTGRES_URL, echo=False)
 SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 async def get_db():
     async with SessionLocal() as session:
         yield session
-

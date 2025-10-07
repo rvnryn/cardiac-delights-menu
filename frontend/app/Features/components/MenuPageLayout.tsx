@@ -1,5 +1,13 @@
 "use client";
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  memo,
+} from "react";
 import Image from "next/image";
 import { MdClose, MdSearch } from "react-icons/md";
 
@@ -25,9 +33,27 @@ interface MenuPageLayoutProps {
   currency?: string;
   loading?: boolean;
   error?: string | null;
+  isOffline?: boolean;
 }
 
-export default function MenuPageLayout({
+// Debounce hook for search optimization
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+export default memo(function MenuPageLayout({
   title,
   description,
   items,
@@ -37,7 +63,22 @@ export default function MenuPageLayout({
   currency = "PHP",
   loading = false,
   error = null,
+  isOffline = false,
 }: MenuPageLayoutProps) {
+  // ---------- UI state ----------
+  const [activeSection, setActiveSection] = useState(0);
+  const [query, setQuery] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<
+    "featured" | "priceAsc" | "priceDesc" | "alpha"
+  >("featured");
+  const [dense, setDense] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Debounce search query for better performance
+  const debouncedQuery = useDebounce(query, 300);
+
+  // Memoize currency formatter to prevent recreation
   const currencyFmt = useMemo(
     () => new Intl.NumberFormat(locale, { style: "currency", currency }),
     [locale, currency]
@@ -49,7 +90,7 @@ export default function MenuPageLayout({
     return [{ title: "All Items", items }];
   }, [sections, items]);
 
-  // Derive all unique tags for quick filtering
+  // Derive all unique tags for quick filtering - only when items change
   const allTags = useMemo(() => {
     const set = new Set<string>();
     sectionList.forEach((s) =>
@@ -57,16 +98,6 @@ export default function MenuPageLayout({
     );
     return Array.from(set).sort();
   }, [sectionList]);
-
-  // ---------- UI state ----------
-  const [activeSection, setActiveSection] = useState(0);
-  const [query, setQuery] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<
-    "featured" | "priceAsc" | "priceDesc" | "alpha"
-  >("featured");
-  const [dense, setDense] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   // Responsive detection
   useEffect(() => {
@@ -95,13 +126,13 @@ export default function MenuPageLayout({
   // ---------- Filtering + sorting ----------
   const filteredItems = useMemo(() => {
     const base = sectionList[activeSection]?.items || [];
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
 
     let res = base.filter((it) => {
       const inText =
         !q ||
         it.name.toLowerCase().includes(q) ||
-        it.description.toLowerCase().includes(q);
+        it.description?.toLowerCase().includes(q);
       const hasTags =
         selectedTags.length === 0 ||
         selectedTags.every((t) => it.tags?.includes(t));
@@ -124,15 +155,36 @@ export default function MenuPageLayout({
     }
 
     return res;
-  }, [sectionList, activeSection, query, selectedTags, sortKey]);
+  }, [sectionList, activeSection, debouncedQuery, selectedTags, sortKey]);
 
   // ---------- Handlers ----------
-  const toggleTag = (tag: string) =>
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const toggleTag = useCallback(
+    (tag: string) =>
+      setSelectedTags((prev) =>
+        prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      ),
+    []
+  );
+
+  // Memoized section change handler
+  const handleSectionChange = useCallback((index: number) => {
+    setActiveSection(index);
+  }, []);
+
+  // Memoized filter handlers
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
+  }, []);
+
+  const handleSortChange = useCallback(
+    (value: "featured" | "priceAsc" | "priceDesc" | "alpha") => {
+      setSortKey(value);
+    },
+    []
+  );
 
   // ---------- Render ----------
+  // Memoize total count calculation
   const totalCount = useMemo(
     () => sectionList.reduce((sum, s) => sum + (s.items?.length || 0), 0),
     [sectionList]
@@ -248,6 +300,27 @@ export default function MenuPageLayout({
 
   return (
     <main className="min-h-screen lg:ml-64">
+      {/* Offline Banner */}
+      {isOffline && (
+        <div className="bg-orange-500 text-white px-4 py-3 text-center text-sm font-medium">
+          <div className="flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>📱 Offline Mode - Showing your saved menu items</span>
+            <button
+              onClick={() => window.location.reload()}
+              className="ml-3 px-3 py-1 bg-white text-orange-500 rounded-md text-xs font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Reconnect
+            </button>
+          </div>
+        </div>
+      )}{" "}
       {/* Page Header */}
       <header className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         <div className="max-w-7xl mx-auto">
@@ -265,7 +338,7 @@ export default function MenuPageLayout({
         </div>
       </header>
       {/* Sticky Toolbar - Mobile First Design */}
-      <div className="sticky top-0 z-30 px-4 sm:px-6 lg:px-8 pb-4">
+      <div className="top-0 z-30 px-4 sm:px-6 lg:px-8 pb-4">
         <div className="max-w-7xl mx-auto">
           <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-md border border-yellow-900/20 rounded-2xl shadow-xl p-3 sm:p-4">
             {/* Search Bar - Full Width */}
@@ -274,7 +347,7 @@ export default function MenuPageLayout({
                 <span className="sr-only">Search menu</span>
                 <input
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => handleQueryChange(e.target.value)}
                   placeholder="Search dishes…"
                   className="w-full rounded-xl bg-white/95 px-4 sm:px-5 py-3 pr-12 sm:pr-14 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
                   aria-label="Search menu"
@@ -293,7 +366,7 @@ export default function MenuPageLayout({
                 <select
                   value={sortKey}
                   onChange={(e) =>
-                    setSortKey(
+                    handleSortChange(
                       e.target.value as
                         | "featured"
                         | "priceAsc"
@@ -313,7 +386,6 @@ export default function MenuPageLayout({
           </div>
         </div>
       </div>
-
       {/* Content */}
       <section
         className="px-4 sm:px-6 lg:px-8 pt-4 pb-8"
@@ -329,7 +401,6 @@ export default function MenuPageLayout({
           />
         </div>
       </section>
-
       {/* Bottom Section */}
       <footer className="px-4 sm:px-6 lg:px-8 pb-16 mt-8">
         <div className="max-w-4xl mx-auto">
@@ -357,10 +428,10 @@ export default function MenuPageLayout({
       </footer>
     </main>
   );
-}
+});
 
 // ---------- Subcomponents ----------
-function MenuGrid({
+const MenuGrid = memo(function MenuGrid({
   items,
   currencyFmt,
   dense,
@@ -405,9 +476,10 @@ function MenuGrid({
       ))}
     </ul>
   );
-}
+});
 
-function MenuCard({
+// Memoized MenuCard component for better performance
+const MenuCard = memo(function MenuCard({
   item,
   index,
   currencyFmt,
@@ -417,6 +489,7 @@ function MenuCard({
   currencyFmt: Intl.NumberFormat;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const price = currencyFmt.format(item.price).replace("PHP", "₱");
   const cardRef = useRef<HTMLDivElement | null>(null);
 
@@ -442,15 +515,36 @@ function MenuCard({
             aria-hidden
           />
         )}
-        <Image
-          src={item.image}
-          alt={`${item.name}. ${item.description}`}
-          fill
-          sizes="(max-width: 475px) 100vw, (max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, (max-width: 1536px) 20vw, 16vw"
-          className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
-          priority={index < 8}
-          onLoad={() => setLoaded(true)}
-        />
+        {!imageError ? (
+          <Image
+            src={item.image}
+            alt={`${item.name}. ${item.description}`}
+            fill
+            sizes="(max-width: 475px) 100vw, (max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, (max-width: 1536px) 20vw, 16vw"
+            className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            priority={index < 8}
+            onLoad={() => setLoaded(true)}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          // Fallback when image fails to load
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+            <div className="text-center text-white/70">
+              <svg
+                className="w-12 h-12 mx-auto mb-2 opacity-50"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-xs font-medium">{item.name}</p>
+            </div>
+          </div>
+        )}
         <div
           className="absolute inset-x-0 bottom-0 h-16 sm:h-20 md:h-24 bg-gradient-to-t from-black/60 via-black/0 to-transparent pointer-events-none"
           aria-hidden
@@ -500,7 +594,7 @@ function MenuCard({
       </div>
     </article>
   );
-}
+});
 
 function slugify(s: string) {
   return s
