@@ -51,11 +51,51 @@ export function useMenu(category?: string, fields?: string) {
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
 
+  // Check for immediate cache availability to reduce initial loading time
+  useEffect(() => {
+    const now = Date.now();
+
+    // Try memory cache first
+    if (
+      menuCache &&
+      now - cacheTimestamp < CACHE_DURATION &&
+      !category &&
+      !fields
+    ) {
+      setMenu(menuCache);
+      setLoading(false);
+      return;
+    }
+
+    // Try offline storage for immediate display
+    const offlineMenu = getFromOfflineStorage();
+    if (offlineMenu && offlineMenu.length > 0) {
+      setMenu(offlineMenu);
+      setLoading(false);
+      // Don't set offline flag here - let fetchMenu determine connectivity
+      // Still fetch fresh data in background
+      setTimeout(() => fetchMenu(), 100);
+      return;
+    }
+
+    // Use fallback menu immediately if no cache available
+    if (FALLBACK_MENU.length > 0) {
+      setMenu(FALLBACK_MENU);
+      setLoading(false);
+      // Don't set offline flag here - let fetchMenu determine connectivity
+      // Fetch real data in background
+      setTimeout(() => fetchMenu(), 100);
+    }
+  }, []);
+
   const fetchMenu = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only set loading if we don't already have data
+      const hasData = menu.length > 0;
+      if (!hasData) {
+        setLoading(true);
+      }
       setError(null);
-      setIsOffline(false);
 
       // Check memory cache first
       const now = Date.now();
@@ -67,6 +107,7 @@ export function useMenu(category?: string, fields?: string) {
       ) {
         setMenu(menuCache);
         setLoading(false);
+        setIsOffline(false);
         return;
       }
 
@@ -82,12 +123,18 @@ export function useMenu(category?: string, fields?: string) {
         params.toString() ? "?" + params.toString() : ""
       }`;
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
           "Cache-Control": "public, max-age=300", // 5 minutes
         },
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -95,12 +142,20 @@ export function useMenu(category?: string, fields?: string) {
 
       const data = await response.json();
 
+      // Debug: Log the first menu item to check if stock_status is included
+      if (data && data.length > 0) {
+        console.log("🔍 Sample menu item from API:", data[0]);
+        console.log("🔍 Stock status field:", data[0].stock_status);
+        console.log("🔍 All fields in first item:", Object.keys(data[0]));
+      }
+
       // Update memory cache and offline storage for all requests (not just full menu)
       menuCache = data;
       cacheTimestamp = now;
       saveToOfflineStorage(data);
 
       setMenu(data);
+      setIsOffline(false); // Clear offline flag when network succeeds
     } catch (err: unknown) {
       console.warn("Network request failed, trying offline storage:", err);
 
@@ -132,6 +187,7 @@ export function useMenu(category?: string, fields?: string) {
   }, [category, fields]);
 
   useEffect(() => {
+    // Always try to fetch fresh data to check connectivity
     fetchMenu();
   }, [fetchMenu]);
 

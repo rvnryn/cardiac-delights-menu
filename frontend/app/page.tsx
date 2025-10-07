@@ -22,22 +22,33 @@ export default function MenuPage() {
   // Fetch only essential fields for better performance
   const { menu, loading, error, isOffline } = useMenu(
     undefined,
-    "menu_id,dish_name,price,image_url,description"
+    "menu_id,dish_name,price,image_url,description,stock_status"
   );
 
   // Memoize items transformation with optimized sorting
   const items = useMemo(() => {
     if (!menu.length) return [];
 
+    console.log("📋 Raw menu data:", menu[0]); // Debug log
+    console.log("📋 Stock status in raw data:", menu[0]?.stock_status); // Debug log
+
     return menu
-      .map((item) => ({
-        name: item.dish_name,
-        price: item.price,
-        image: item.image_url || "/fallback-image.png",
-        description: item.description || "No description available.",
-      }))
+      .map((item) => {
+        const mappedItem = {
+          name: item.dish_name,
+          price: item.price,
+          image: item.image_url || "/fallback-image.png",
+          description: item.description || "No description available.",
+          stockStatus: item.stock_status,
+        };
+        console.log("🔄 Mapped item:", mappedItem); // Debug log
+        return mappedItem;
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [menu]);
+
+  // Show loading only if we have no data at all
+  const shouldShowLoading = loading && items.length === 0;
 
   // Memoize sections to prevent recreation
   const sections = useMemo(
@@ -68,7 +79,7 @@ export default function MenuPage() {
       items={items}
       sections={sections}
       bottomSection={bottomSection}
-      loading={loading}
+      loading={shouldShowLoading}
       error={error}
       isOffline={isOffline}
     />

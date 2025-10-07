@@ -16,6 +16,7 @@ interface MenuItem {
   price: number;
   image: string;
   description: string;
+  stockStatus?: string;
   tags?: string[];
 }
 
@@ -192,7 +193,7 @@ export default memo(function MenuPageLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen lg:ml-64 flex items-center justify-center">
+      <div className="min-h-screen lg:ml-64 pt-20 lg:pt-0 flex items-center justify-center">
         <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-yellow-200/50 max-w-md w-full mx-auto">
           <div className="flex flex-col items-center text-center space-y-6">
             <div className="relative">
@@ -225,16 +226,29 @@ export default memo(function MenuPageLayout({
               <h3 className="text-2xl font-bold text-white">Loading Menu</h3>
               <div className="space-y-2">
                 <p className="text-white font-medium">
-                  Fetching the latest dishes
+                  {items.length > 0
+                    ? "Updating menu..."
+                    : "Fetching the latest dishes"}
                 </p>
-                <p className="text-sm text-white">Please wait a moment...</p>
+                <p className="text-sm text-white">
+                  {items.length > 0
+                    ? "Showing cached items"
+                    : "Please wait a moment..."}
+                </p>
               </div>
             </div>
 
-            {/* Progress bar */}
+            {/* Progress indicator */}
             <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full animate-pulse"></div>
+              <div className="h-full bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-full animate-pulse transition-all duration-300"></div>
             </div>
+
+            {/* Show item count if we have cached data */}
+            {items.length > 0 && (
+              <p className="text-sm text-yellow-200">
+                {items.length} items available
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -458,14 +472,14 @@ const MenuGrid = memo(function MenuGrid({
   return (
     <ul
       className="
-        grid gap-4 sm:gap-6 lg:gap-8
-        grid-cols-1 
+        grid gap-2 sm:gap-4 lg:gap-6
+        grid-cols-2 
         xs:grid-cols-2 
-        sm:grid-cols-2 
+        sm:grid-cols-3 
         md:grid-cols-3 
-        lg:grid-cols-4 
-        xl:grid-cols-5 
-        2xl:grid-cols-6
+        lg:grid-cols-3 
+        xl:grid-cols-3 
+        2xl:grid-cols-3
       "
       role="list"
     >
@@ -507,8 +521,8 @@ const MenuCard = memo(function MenuCard({
       aria-label={item.name}
       style={{ animationDelay: `${index * 40}ms` }}
     >
-      {/* Image - Consistent aspect ratio */}
-      <div className="relative overflow-hidden aspect-[4/3] bg-black/5 text-white flex-shrink-0">
+      {/* Image - Responsive aspect ratio */}
+      <div className="relative overflow-hidden aspect-[5/3] sm:aspect-[4/3] md:aspect-[4/3] lg:aspect-[7/4] bg-black/5 text-white flex-shrink-0">
         {!loaded && (
           <div
             className="absolute inset-0 animate-pulse bg-black/5"
@@ -546,29 +560,68 @@ const MenuCard = memo(function MenuCard({
           </div>
         )}
         <div
-          className="absolute inset-x-0 bottom-0 h-16 sm:h-20 md:h-24 bg-gradient-to-t from-black/60 via-black/0 to-transparent pointer-events-none"
+          className="absolute inset-x-0 bottom-0 h-12 sm:h-16 md:h-20 lg:h-24 bg-gradient-to-t from-black/60 via-black/0 to-transparent pointer-events-none"
           aria-hidden
         />
 
         {/* Price Badge */}
-        <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
+        <div className="absolute top-1.5 sm:top-2 md:top-3 right-1.5 sm:right-2 md:right-3">
           <div
-            className="rounded-full bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-semibold shadow border border-black/10 text-white"
+            className="rounded-full bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur px-1.5 sm:px-2 md:px-3 py-1 sm:py-1 md:py-1.5 text-xs sm:text-sm font-semibold shadow border border-black/10 text-white"
             aria-label={`Price ${price}`}
           >
             {price}
           </div>
         </div>
+
+        {/* Stock Status Badge */}
+        {item.stockStatus && (
+          <div className="absolute top-1.5 sm:top-2 md:top-3 left-1.5 sm:left-2 md:left-3">
+            <div
+              className={`rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs font-medium shadow border backdrop-blur transition-all duration-200 ${
+                item.stockStatus === "Available" ||
+                item.stockStatus === "in_stock"
+                  ? "bg-green-500/90 text-white border-green-400/20"
+                  : item.stockStatus === "Low Stock" ||
+                    item.stockStatus === "low_stock"
+                  ? "bg-yellow-500/90 text-black border-yellow-400/20"
+                  : "bg-red-500/90 text-white border-red-400/20"
+              }`}
+              aria-label={`Stock status: ${item.stockStatus}`}
+            >
+              <span className="flex items-center gap-0.5">
+                <span className="text-xs">
+                  {item.stockStatus === "Available" ||
+                  item.stockStatus === "in_stock"
+                    ? "✓"
+                    : item.stockStatus === "Low Stock" ||
+                      item.stockStatus === "low_stock"
+                    ? "⚠"
+                    : "✗"}
+                </span>
+                <span className="hidden md:inline text-xs">
+                  {item.stockStatus === "Available" ||
+                  item.stockStatus === "in_stock"
+                    ? "Available"
+                    : item.stockStatus === "Low Stock" ||
+                      item.stockStatus === "low_stock"
+                    ? "Low"
+                    : "Out"}
+                </span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content - Flexible height */}
-      <div className="p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col gap-2 sm:gap-3 flex-grow">
-        <div className="flex items-start justify-between gap-2 sm:gap-3">
-          <h3 className="font-bold text-sm sm:text-base md:text-lg lg:text-xl text-white leading-tight flex-grow">
+      <div className="p-2 sm:p-3 md:p-4 lg:p-5 flex flex-col gap-1 sm:gap-2 md:gap-3 flex-grow">
+        <div className="flex items-start justify-between gap-1 sm:gap-2">
+          <h3 className="font-bold text-xs sm:text-sm md:text-base lg:text-lg text-white leading-tight flex-grow">
             <span className="line-clamp-2">{item.name}</span>
           </h3>
         </div>
-        <p className="text-xs sm:text-sm text-white/70 leading-relaxed line-clamp-3 flex-grow">
+        <p className="text-xs sm:text-xs md:text-sm lg:text-sm text-white/70 leading-relaxed line-clamp-2 lg:line-clamp-3 flex-grow">
           {item.description}
         </p>
 
