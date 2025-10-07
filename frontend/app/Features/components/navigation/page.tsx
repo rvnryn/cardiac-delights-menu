@@ -85,12 +85,19 @@ export default function Navbar() {
     return pathname === path;
   }
 
+  // Auto-close mobile menu when navigation item is clicked
+  const handleNavClick = () => {
+    if (isMobile && isMenuOpen) {
+      setIsMenuOpen(false);
+    }
+  };
+
   return (
     <>
       {/* Mobile menu button */}
       {isMobile && !isMenuOpen && (
         <button
-          className="fixed top-4 left-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-br from-slate-900/90 via-black/90 to-gray-800/90 border border-yellow-400/20 shadow-xl hover:border-yellow-400/30 hover:shadow-yellow-400/10 backdrop-blur-lg transition-all duration-300"
+          className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-br from-slate-900/90 via-black/90 to-gray-800/90 border border-yellow-400/20 shadow-xl hover:border-yellow-400/30 hover:shadow-yellow-400/10 backdrop-blur-lg transition-all duration-300"
           onClick={() => setIsMenuOpen(true)}
           aria-label="Open food categories"
         >
@@ -224,6 +231,7 @@ export default function Navbar() {
                 <li key={item.path}>
                   <Link
                     href={item.path}
+                    onClick={handleNavClick}
                     className={`w-full flex items-center rounded-xl cursor-pointer group relative overflow-hidden transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/50 gap-3 px-4 py-3.5 justify-start
                       ${
                         active

@@ -299,7 +299,7 @@ export default memo(function MenuPageLayout({
   }
 
   return (
-    <main className="min-h-screen lg:ml-64">
+    <main className="min-h-screen lg:ml-64 pt-20 lg:pt-0">
       {/* Offline Banner */}
       {isOffline && (
         <div className="bg-orange-500 text-white px-4 py-3 text-center text-sm font-medium">
