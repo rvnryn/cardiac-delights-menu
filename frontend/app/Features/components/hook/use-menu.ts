@@ -211,7 +211,7 @@ export function useMenu(category?: string, fields?: string) {
           schema: "public",
           table: "menu",
         },
-        (payload: any) => {
+        (payload: { eventType: string; new?: any; old?: any }) => {
           console.log("🔄 Real-time menu update:", payload);
 
           const { eventType, new: newRow, old: oldRow } = payload;
