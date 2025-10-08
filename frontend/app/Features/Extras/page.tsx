@@ -7,22 +7,18 @@ export default function ExtrasPage() {
   const { menu, loading, error } = useMenu();
 
   const items = useMemo(() => {
-    console.log("🍽️ Processing Extras menu:", menu.length, "total items");
-    const filtered = menu
-      .filter((item) => {
-        console.log(`🔍 Item: ${item.dish_name}, Category: "${item.category}"`);
-        return item.category === "Extras";
-      })
-      .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+    if (!menu.length) return [];
+
+    return menu
+      .filter((item) => item.category?.toLowerCase().includes("extra"))
       .map((item) => ({
         name: item.dish_name,
         price: item.price,
         image: item.image_url || "/fallback-image.png",
         description: item.description || "No description available.",
-      }));
-
-    console.log("✅ Extras filtered items:", filtered.length);
-    return filtered;
+        stockStatus: item.stock_status,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [menu]);
 
   return (

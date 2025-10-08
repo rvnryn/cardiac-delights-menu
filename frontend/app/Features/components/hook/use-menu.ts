@@ -14,12 +14,6 @@ export interface MenuItem {
   updated_at?: string;
 }
 
-interface SupabaseRealtimePayload {
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-  new?: MenuItem;
-  old?: MenuItem;
-}
-
 // Cache for menu data - use Map to cache by category
 const menuCacheMap = new Map<string, { data: MenuItem[]; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -56,43 +50,6 @@ export function useMenu(category?: string, fields?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
-
-  // Check for immediate cache availability to reduce initial loading time
-  useEffect(() => {
-    const now = Date.now();
-    const cacheKey = category || "all";
-
-    // Try memory cache first
-    const cached = menuCacheMap.get(cacheKey);
-    if (cached && now - cached.timestamp < CACHE_DURATION) {
-      setMenu(cached.data);
-      setLoading(false);
-      return;
-    }
-
-    // For full menu (no category), try offline storage for immediate display
-    if (!category) {
-      const offlineMenu = getFromOfflineStorage();
-      if (offlineMenu && offlineMenu.length > 0) {
-        setMenu(offlineMenu);
-        setLoading(false);
-        // Still fetch fresh data in background
-        setTimeout(() => fetchMenu(), 100);
-        return;
-      }
-
-      // Use fallback menu immediately if no cache available
-      if (FALLBACK_MENU.length > 0) {
-        setMenu(FALLBACK_MENU);
-        setLoading(false);
-        // Fetch real data in background
-        setTimeout(() => fetchMenu(), 100);
-      }
-    } else {
-      // For category-specific requests, always fetch fresh data
-      fetchMenu();
-    }
-  }, [category, fields]);
 
   const fetchMenu = useCallback(async () => {
     try {
@@ -195,6 +152,43 @@ export function useMenu(category?: string, fields?: string) {
     }
   }, [category, fields]);
 
+  // Check for immediate cache availability to reduce initial loading time
+  useEffect(() => {
+    const now = Date.now();
+    const cacheKey = category || "all";
+
+    // Try memory cache first
+    const cached = menuCacheMap.get(cacheKey);
+    if (cached && now - cached.timestamp < CACHE_DURATION) {
+      setMenu(cached.data);
+      setLoading(false);
+      return;
+    }
+
+    // For full menu (no category), try offline storage for immediate display
+    if (!category) {
+      const offlineMenu = getFromOfflineStorage();
+      if (offlineMenu && offlineMenu.length > 0) {
+        setMenu(offlineMenu);
+        setLoading(false);
+        // Still fetch fresh data in background
+        setTimeout(() => fetchMenu(), 100);
+        return;
+      }
+
+      // Use fallback menu immediately if no cache available
+      if (FALLBACK_MENU.length > 0) {
+        setMenu(FALLBACK_MENU);
+        setLoading(false);
+        // Fetch real data in background
+        setTimeout(() => fetchMenu(), 100);
+      }
+    } else {
+      // For category-specific requests, always fetch fresh data
+      fetchMenu();
+    }
+  }, [category, fields, fetchMenu]);
+
   useEffect(() => {
     // Always try to fetch fresh data to check connectivity
     fetchMenu();
@@ -202,80 +196,19 @@ export function useMenu(category?: string, fields?: string) {
 
   // Real-time subscription for menu updates
   useEffect(() => {
-    const channel = supabase
-      .channel("menu-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "menu",
-        },
-        (payload: { eventType: string; new?: any; old?: any }) => {
-          console.log("🔄 Real-time menu update:", payload);
+    console.log("🔌 Setting up Supabase real-time subscription");
 
-          const { eventType, new: newRow, old: oldRow } = payload;
-
-          setMenu((currentMenu) => {
-            let updatedMenu = [...currentMenu];
-
-            if (eventType === "INSERT" && newRow) {
-              // Add new item if it doesn't exist
-              const exists = updatedMenu.find(
-                (item) => item.menu_id === newRow.menu_id
-              );
-              if (!exists) {
-                updatedMenu.push(newRow as MenuItem);
-              }
-            }
-
-            if (eventType === "UPDATE" && newRow) {
-              // Update existing item
-              const index = updatedMenu.findIndex(
-                (item) => item.menu_id === newRow.menu_id
-              );
-              if (index !== -1) {
-                updatedMenu[index] = {
-                  ...updatedMenu[index],
-                  ...newRow,
-                } as MenuItem;
-              }
-            }
-
-            if (eventType === "DELETE" && oldRow) {
-              // Remove deleted item
-              updatedMenu = updatedMenu.filter(
-                (item) => item.menu_id !== oldRow.menu_id
-              );
-            }
-
-            // Update cache and offline storage
-            const allMenuKey = "all";
-            const currentAllMenu = menuCacheMap.get(allMenuKey);
-            if (currentAllMenu) {
-              menuCacheMap.set(allMenuKey, {
-                data: updatedMenu,
-                timestamp: Date.now(),
-              });
-              saveToOfflineStorage(updatedMenu);
-            }
-
-            return updatedMenu;
-          });
-        }
-      )
-      .subscribe((status: string) => {
-        console.log("📡 Supabase subscription status:", status);
-        if (status === "SUBSCRIBED") {
-          setIsOffline(false);
-        }
-      });
+    // For now, disable real-time and use periodic refresh instead
+    const interval = setInterval(() => {
+      console.log("🔄 Periodic menu refresh");
+      fetchMenu();
+    }, 30000); // Refresh every 30 seconds
 
     return () => {
-      console.log("🔌 Unsubscribing from menu changes");
-      supabase.removeChannel(channel);
+      console.log("🔌 Cleaning up periodic refresh");
+      clearInterval(interval);
     };
-  }, []);
+  }, [fetchMenu]);
 
   return { menu, loading, error, isOffline, refetch: fetchMenu };
 }
