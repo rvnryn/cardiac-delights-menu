@@ -14,6 +14,12 @@ export interface MenuItem {
   updated_at?: string;
 }
 
+interface SupabaseRealtimePayload {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  new?: MenuItem;
+  old?: MenuItem;
+}
+
 // Cache for menu data - use Map to cache by category
 const menuCacheMap = new Map<string, { data: MenuItem[]; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -196,73 +202,74 @@ export function useMenu(category?: string, fields?: string) {
 
   // Real-time subscription for menu updates
   useEffect(() => {
-    const channel = supabase.channel("menu-changes").on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "menu",
-      },
-      (payload: any) => {
-        console.log("🔄 Real-time menu update:", payload);
+    const channel = supabase
+      .channel("menu-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "menu",
+        },
+        (payload: any) => {
+          console.log("🔄 Real-time menu update:", payload);
 
-        const { eventType, new: newRow, old: oldRow } = payload;
+          const { eventType, new: newRow, old: oldRow } = payload;
 
-        setMenu((currentMenu) => {
-          let updatedMenu = [...currentMenu];
+          setMenu((currentMenu) => {
+            let updatedMenu = [...currentMenu];
 
-          if (eventType === "INSERT" && newRow) {
-            // Add new item if it doesn't exist
-            const exists = updatedMenu.find(
-              (item) => item.menu_id === newRow.menu_id
-            );
-            if (!exists) {
-              updatedMenu.push(newRow as MenuItem);
+            if (eventType === "INSERT" && newRow) {
+              // Add new item if it doesn't exist
+              const exists = updatedMenu.find(
+                (item) => item.menu_id === newRow.menu_id
+              );
+              if (!exists) {
+                updatedMenu.push(newRow as MenuItem);
+              }
             }
-          }
 
-          if (eventType === "UPDATE" && newRow) {
-            // Update existing item
-            const index = updatedMenu.findIndex(
-              (item) => item.menu_id === newRow.menu_id
-            );
-            if (index !== -1) {
-              updatedMenu[index] = {
-                ...updatedMenu[index],
-                ...newRow,
-              } as MenuItem;
+            if (eventType === "UPDATE" && newRow) {
+              // Update existing item
+              const index = updatedMenu.findIndex(
+                (item) => item.menu_id === newRow.menu_id
+              );
+              if (index !== -1) {
+                updatedMenu[index] = {
+                  ...updatedMenu[index],
+                  ...newRow,
+                } as MenuItem;
+              }
             }
-          }
 
-          if (eventType === "DELETE" && oldRow) {
-            // Remove deleted item
-            updatedMenu = updatedMenu.filter(
-              (item) => item.menu_id !== oldRow.menu_id
-            );
-          }
+            if (eventType === "DELETE" && oldRow) {
+              // Remove deleted item
+              updatedMenu = updatedMenu.filter(
+                (item) => item.menu_id !== oldRow.menu_id
+              );
+            }
 
-          // Update cache and offline storage
-          const allMenuKey = "all";
-          const currentAllMenu = menuCacheMap.get(allMenuKey);
-          if (currentAllMenu) {
-            menuCacheMap.set(allMenuKey, {
-              data: updatedMenu,
-              timestamp: Date.now(),
-            });
-            saveToOfflineStorage(updatedMenu);
-          }
+            // Update cache and offline storage
+            const allMenuKey = "all";
+            const currentAllMenu = menuCacheMap.get(allMenuKey);
+            if (currentAllMenu) {
+              menuCacheMap.set(allMenuKey, {
+                data: updatedMenu,
+                timestamp: Date.now(),
+              });
+              saveToOfflineStorage(updatedMenu);
+            }
 
-          return updatedMenu;
-        });
-      }
-    );
-
-    channel.subscribe((status: string) => {
-      console.log("📡 Supabase subscription status:", status);
-      if (status === "SUBSCRIBED") {
-        setIsOffline(false);
-      }
-    });
+            return updatedMenu;
+          });
+        }
+      )
+      .subscribe((status: string) => {
+        console.log("📡 Supabase subscription status:", status);
+        if (status === "SUBSCRIBED") {
+          setIsOffline(false);
+        }
+      });
 
     return () => {
       console.log("🔌 Unsubscribing from menu changes");
