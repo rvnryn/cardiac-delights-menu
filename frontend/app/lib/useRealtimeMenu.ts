@@ -50,35 +50,24 @@ export function useRealtimeMenu(initialData: MenuItem[]) {
       });
     }
 
-    const channel = supabase
-      .channel("menu")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "menu" },
-        handleEvent
-      )
-      .subscribe((status: string) => {
-        setConnected(status === "SUBSCRIBED");
-      });
+    // Disable real-time subscription for now, use polling instead
+    console.log("🔄 Using polling for menu updates");
+    setConnected(true);
 
-    // Poll fallback if disconnected
+    // Poll for updates every 30 seconds
     function pollMenu() {
       fetch("/api/menu")
         .then((res) => res.json())
-        .then((data) => setMenu(data));
-    }
-    if (!connected) {
-      pollingRef.current = setInterval(pollMenu, 30000);
-    } else if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
+        .then((data) => setMenu(data))
+        .catch((err) => console.warn("Menu polling failed:", err));
     }
 
+    pollingRef.current = setInterval(pollMenu, 30000);
+
     return () => {
-      supabase.removeChannel(channel);
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [connected]);
+  }, []);
 
   return { menu, connected };
 }
