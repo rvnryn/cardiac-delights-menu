@@ -425,7 +425,10 @@ export default memo(function MenuPageLayout({
               <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-tight mb-2 xs:mb-3 sm:mb-4 drop-shadow-lg text-black">
                 {title}
               </h1>
-              <div className="flex justify-center mb-2 xs:mb-3 sm:mb-4" aria-hidden>
+              <div
+                className="flex justify-center mb-2 xs:mb-3 sm:mb-4"
+                aria-hidden
+              >
                 <div className="w-16 xs:w-20 sm:w-24 md:w-32 lg:w-40 xl:w-48 h-0.5 sm:h-1 rounded-full bg-black shadow-[0_0_15px_rgba(234,179,8,0.8)]"></div>
               </div>
               <p className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-black/90 max-w-4xl mx-auto leading-relaxed px-2 xs:px-3 sm:px-4">
@@ -434,101 +437,12 @@ export default memo(function MenuPageLayout({
             </div>
           </div>
         </header>
-        {/* Sticky Toolbar - Ultra Responsive Full Width Controls */}
+        {/* Sticky Toolbar - Consolidated Responsive Layout */}
         <div className="top-0 z-30 px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 pb-3 md:pb-4">
           <div className="max-w-7xl mx-auto">
             <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-md border border-yellow-900/20 rounded-xl md:rounded-2xl shadow-xl p-2 xs:p-3 sm:p-4">
-              {/* Extra Small Devices (< 475px) - Ultra Compact */}
-              <div className="flex flex-col gap-2 xs:hidden">
-                {/* Search Bar - Compact */}
-                <label className="relative w-full">
-                  <span className="sr-only">Search menu</span>
-                  <input
-                    value={query}
-                    onChange={(e) => handleQueryChange(e.target.value)}
-                    placeholder="Search…"
-                    className="w-full rounded-lg bg-white/95 px-3 py-2.5 pr-10 text-sm text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
-                    aria-label="Search menu"
-                    autoComplete="off"
-                  />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center">
-                    <MdSearch className="text-lg text-yellow-900" />
-                  </span>
-                </label>
-
-                {/* Category and Sort - Full Width Stack */}
-                <div className="flex flex-col gap-2">
-                  <label className="relative">
-                    <span className="sr-only">Filter by category</span>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full text-yellow-900 rounded-lg bg-white/95 px-3 py-2.5 text-xs border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
-                    >
-                      <option value="all">All Categories</option>
-                      {menuCategories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="relative">
-                    <span className="sr-only">Sort</span>
-                    <select
-                      value={sortKey}
-                      onChange={(e) =>
-                        handleSortChange(
-                          e.target.value as
-                            | "featured"
-                            | "priceAsc"
-                            | "priceDesc"
-                            | "alpha"
-                        )
-                      }
-                      className="w-full text-yellow-900 rounded-lg bg-white/95 px-3 py-2.5 text-xs border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
-                    >
-                      <option value="featured">Featured</option>
-                      <option value="priceAsc">Price: Low to High</option>
-                      <option value="priceDesc">Price: High to Low</option>
-                      <option value="alpha">Alphabetical</option>
-                    </select>
-                  </label>
-                </div>
-
-                {/* Results Counter & Clear All - Ultra Compact */}
-                {(selectedCategory !== "all" ||
-                  debouncedQuery ||
-                  selectedTags.length > 0) && (
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs text-white/80 bg-white/10 px-2 py-1.5 rounded-md backdrop-blur-sm border border-white/20 flex-1">
-                      <span className="font-medium">
-                        {filteredItems.length}
-                      </span>
-                      <span className="text-white/60 text-[10px]"> items</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedCategory("all");
-                        setQuery("");
-                        setSelectedTags([]);
-                        setSortKey("featured");
-                        setAnimateResults(true);
-                        setTimeout(() => setAnimateResults(false), 300);
-                      }}
-                      className="flex items-center gap-1 px-2 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-md transition-all duration-200 text-xs font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
-                      aria-label="Clear all filters"
-                    >
-                      <MdClear className="text-xs group-hover:rotate-90 transition-transform duration-200" />
-                      <span className="text-[10px]">Clear</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Small Mobile (475px-640px) - Stacked Layout */}
-              <div className="hidden xs:flex flex-col gap-3 sm:hidden">
+              {/* Mobile Layout (< 768px) - Stacked */}
+              <div className="flex flex-col gap-3 md:hidden">
                 {/* Search Bar - Full Width */}
                 <label className="relative w-full">
                   <span className="sr-only">Search menu</span>
@@ -536,23 +450,23 @@ export default memo(function MenuPageLayout({
                     value={query}
                     onChange={(e) => handleQueryChange(e.target.value)}
                     placeholder="Search dishes…"
-                    className="w-full rounded-xl bg-white/95 px-4 py-3 pr-12 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
+                    className="w-full rounded-xl bg-white/95 px-3 xs:px-4 py-2.5 xs:py-3 pr-10 xs:pr-12 text-sm xs:text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
                     aria-label="Search menu"
                     autoComplete="off"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                    <MdSearch className="text-xl text-yellow-900" />
+                  <span className="absolute right-2.5 xs:right-3 top-1/2 -translate-y-1/2 flex items-center">
+                    <MdSearch className="text-lg xs:text-xl text-yellow-900" />
                   </span>
                 </label>
 
-                {/* Category and Sort - Side by Side */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Category and Sort - Responsive Grid */}
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 xs:gap-3">
                   <label className="relative">
                     <span className="sr-only">Filter by category</span>
                     <select
                       value={selectedCategory}
                       onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 py-3 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 py-2.5 xs:py-3 text-xs xs:text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
                     >
                       <option value="all">All Categories</option>
                       {menuCategories.map((category) => (
@@ -576,7 +490,7 @@ export default memo(function MenuPageLayout({
                             | "alpha"
                         )
                       }
-                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 py-3 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 py-2.5 xs:py-3 text-xs xs:text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
                     >
                       <option value="featured">Featured</option>
                       <option value="priceAsc">Price: Low to High</option>
@@ -590,8 +504,8 @@ export default memo(function MenuPageLayout({
                 {(selectedCategory !== "all" ||
                   debouncedQuery ||
                   selectedTags.length > 0) && (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm text-white/80 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/20 flex-1">
+                  <div className="flex items-center justify-between gap-2 xs:gap-3">
+                    <div className="text-xs xs:text-sm text-white/80 bg-white/10 px-2 xs:px-3 py-1.5 xs:py-2 rounded-lg backdrop-blur-sm border border-white/20 flex-1">
                       <span className="font-medium">
                         {filteredItems.length}
                       </span>
@@ -610,110 +524,18 @@ export default memo(function MenuPageLayout({
                         setAnimateResults(true);
                         setTimeout(() => setAnimateResults(false), 300);
                       }}
-                      className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-lg transition-all duration-200 text-sm font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
+                      className="flex items-center gap-1 xs:gap-2 px-2 xs:px-3 py-1.5 xs:py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-lg transition-all duration-200 text-xs xs:text-sm font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
                       aria-label="Clear all filters"
                     >
-                      <MdClear className="text-sm group-hover:rotate-90 transition-transform duration-200" />
+                      <MdClear className="text-xs xs:text-sm group-hover:rotate-90 transition-transform duration-200" />
                       <span>Clear</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Tablet Portrait (640px-768px) - Hybrid Layout */}
-              <div className="hidden sm:flex md:hidden flex-col gap-3">
-                {/* Search Bar - Full Width */}
-                <label className="relative w-full">
-                  <span className="sr-only">Search menu</span>
-                  <input
-                    value={query}
-                    onChange={(e) => handleQueryChange(e.target.value)}
-                    placeholder="Search dishes…"
-                    className="w-full rounded-xl bg-white/95 px-5 py-3 pr-14 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
-                    aria-label="Search menu"
-                    autoComplete="off"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                    <MdSearch className="text-xl text-yellow-900" />
-                  </span>
-                </label>
-
-                {/* Controls Row - Category, Sort, Results & Clear */}
-                <div className="flex items-center gap-3">
-                  <label className="relative flex-1">
-                    <span className="sr-only">Filter by category</span>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-4 py-2.5 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
-                    >
-                      <option value="all">All Categories</option>
-                      {menuCategories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="relative flex-1">
-                    <span className="sr-only">Sort</span>
-                    <select
-                      value={sortKey}
-                      onChange={(e) =>
-                        handleSortChange(
-                          e.target.value as
-                            | "featured"
-                            | "priceAsc"
-                            | "priceDesc"
-                            | "alpha"
-                        )
-                      }
-                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-4 py-2.5 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
-                    >
-                      <option value="featured">Featured</option>
-                      <option value="priceAsc">Price: Low to High</option>
-                      <option value="priceDesc">Price: High to Low</option>
-                      <option value="alpha">Alphabetical</option>
-                    </select>
-                  </label>
-
-                  {/* Results Counter & Clear All */}
-                  {(selectedCategory !== "all" ||
-                    debouncedQuery ||
-                    selectedTags.length > 0) && (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="text-sm text-white/80 whitespace-nowrap bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/20">
-                        <span className="font-medium">
-                          {filteredItems.length}
-                        </span>
-                        <span className="text-white/60 hidden sm:inline">
-                          {" "}
-                          of {sectionList[activeSection]?.items?.length || 0}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setSelectedCategory("all");
-                          setQuery("");
-                          setSelectedTags([]);
-                          setSortKey("featured");
-                          setAnimateResults(true);
-                          setTimeout(() => setAnimateResults(false), 300);
-                        }}
-                        className="flex items-center gap-1 px-2 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-lg transition-all duration-200 text-sm font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
-                        aria-label="Clear all filters"
-                      >
-                        <MdClear className="text-sm group-hover:rotate-90 transition-transform duration-200" />
-                        <span className="hidden lg:inline">Clear</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Desktop & Large Screens (768px+) - Single Row Layout */}
-              <div className="hidden md:flex gap-3 items-center justify-between">
+              {/* Desktop Layout (768px+) - Single Row */}
+              <div className="hidden md:flex gap-3 lg:gap-4 items-center justify-between">
                 {/* Search Bar */}
                 <label className="relative flex-1 max-w-xs xl:max-w-sm">
                   <span className="sr-only">Search menu</span>
