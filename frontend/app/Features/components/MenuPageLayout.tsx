@@ -9,13 +9,33 @@ import {
   memo,
 } from "react";
 import Image from "next/image";
-import { MdClose, MdSearch } from "react-icons/md";
+import {
+  MdClose,
+  MdSearch,
+  MdFilterList,
+  MdClear,
+  MdTune,
+  MdRestaurant,
+  MdStar,
+  MdLocationOn,
+  MdPhone,
+  MdAccessTime,
+} from "react-icons/md";
+import {
+  FiFilter,
+  FiX,
+  FiChevronDown,
+  FiClock,
+  FiMapPin,
+} from "react-icons/fi";
+import { HiSparkles, HiTrendingUp } from "react-icons/hi";
 
 interface MenuItem {
   name: string;
   price: number;
   image: string;
   description: string;
+  category?: string; // Add category to MenuItem interface
   stockStatus?: string;
   tags?: string[];
 }
@@ -71,12 +91,17 @@ export default memo(function MenuPageLayout({
   // ---------- UI state ----------
   const [activeSection, setActiveSection] = useState(0);
   const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<
     "featured" | "priceAsc" | "priceDesc" | "alpha"
   >("featured");
   const [dense, setDense] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [animateResults, setAnimateResults] = useState(false);
 
   // Debounce search query for better performance
   const debouncedQuery = useDebounce(query, 300);
@@ -101,6 +126,19 @@ export default memo(function MenuPageLayout({
     );
     return Array.from(set).sort();
   }, [sectionList]);
+
+  // Define menu categories matching your navigation
+  const menuCategories = useMemo(
+    () => [
+      "Rice Toppings",
+      "Sizzlers",
+      "Soup & Noodles",
+      "Desserts",
+      "Beverage",
+      "Extras",
+    ],
+    []
+  );
 
   // Responsive detection
   useEffect(() => {
@@ -139,7 +177,9 @@ export default memo(function MenuPageLayout({
       const hasTags =
         selectedTags.length === 0 ||
         selectedTags.every((t) => it.tags?.includes(t));
-      return inText && hasTags;
+      const inCategory =
+        selectedCategory === "all" || it.category === selectedCategory;
+      return inText && hasTags && inCategory;
     });
 
     switch (sortKey) {
@@ -158,7 +198,14 @@ export default memo(function MenuPageLayout({
     }
 
     return res;
-  }, [sectionList, activeSection, debouncedQuery, selectedTags, sortKey]);
+  }, [
+    sectionList,
+    activeSection,
+    debouncedQuery,
+    selectedTags,
+    selectedCategory,
+    sortKey,
+  ]);
 
   // ---------- Handlers ----------
   const toggleTag = useCallback(
@@ -174,16 +221,30 @@ export default memo(function MenuPageLayout({
     setActiveSection(index);
   }, []);
 
-  // Memoized filter handlers
+  // Memoized filter handlers with animation triggers
   const handleQueryChange = useCallback((value: string) => {
     setQuery(value);
+    setAnimateResults(true);
+    setTimeout(() => setAnimateResults(false), 300);
   }, []);
 
   const handleSortChange = useCallback(
     (value: "featured" | "priceAsc" | "priceDesc" | "alpha") => {
       setSortKey(value);
+      setAnimateResults(true);
+      setTimeout(() => setAnimateResults(false), 300);
     },
     []
+  );
+
+  const handleCategoryChange = useCallback(
+    (value: string) => {
+      setSelectedCategory(value);
+      setAnimateResults(true);
+      setTimeout(() => setAnimateResults(false), 300);
+      if (isMobile) setShowFilters(false);
+    },
+    [isMobile]
   );
 
   // ---------- Render ----------
@@ -315,201 +376,561 @@ export default memo(function MenuPageLayout({
   }
 
   return (
-    <main className="min-h-screen lg:ml-64 pt-20 lg:pt-0">
-      {/* Offline Banner */}
-      {isOffline && (
-        <div className="bg-orange-500 text-white px-4 py-3 text-center text-sm font-medium">
-          <div className="flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>📱 Offline Mode - Showing your saved menu items</span>
-            <button
-              onClick={() => window.location.reload()}
-              className="ml-3 px-3 py-1 bg-white text-orange-500 rounded-md text-xs font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Reconnect
-            </button>
-          </div>
-        </div>
-      )}
-      {/* Update Indicator */}
-      {isValidating && !loading && (
-        <div className="bg-blue-500 text-white px-4 py-2 text-center text-sm font-medium">
-          <div className="flex items-center justify-center gap-2">
-            <svg
-              className="animate-spin w-4 h-4"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span>🔄 Updating menu...</span>
-          </div>
-        </div>
-      )}{" "}
-      {/* Page Header */}
-      <header className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-4 sm:mb-6 animate-fade-in">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-tight mb-3 sm:mb-4 drop-shadow-lg text-black">
-              {title}
-            </h1>
-            <div className="flex justify-center mb-3 sm:mb-4" aria-hidden>
-              <div className="w-24 sm:w-32 md:w-40 lg:w-48 h-1 rounded-full bg-black shadow-[0_0_15px_rgba(234,179,8,0.8)]"></div>
-            </div>
-            <p className="text-lg sm:text-xl md:text-2xl text-black/90 max-w-4xl mx-auto leading-relaxed px-4">
-              {description}
-            </p>
-          </div>
-        </div>
-      </header>
-      {/* Sticky Toolbar - Mobile First Design */}
-      <div className="top-0 z-30 px-4 sm:px-6 lg:px-8 pb-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-md border border-yellow-900/20 rounded-2xl shadow-xl p-3 sm:p-4">
-            {/* Search Bar - Full Width */}
-            <div className="mb-3">
-              <label className="relative w-full flex items-center group">
-                <span className="sr-only">Search menu</span>
-                <input
-                  value={query}
-                  onChange={(e) => handleQueryChange(e.target.value)}
-                  placeholder="Search dishes…"
-                  className="w-full rounded-xl bg-white/95 px-4 sm:px-5 py-3 pr-12 sm:pr-14 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
-                  aria-label="Search menu"
-                  autoComplete="off"
+    <>
+      <main className="min-h-screen pt-0">
+        {/* Offline Banner */}
+        {isOffline && (
+          <div className="bg-orange-500 text-white px-4 py-3 text-center text-sm font-medium">
+            <div className="flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
                 />
-                <span className="absolute right-3 sm:right-4 flex items-center">
-                  <MdSearch className="text-xl text-yellow-900" />
-                </span>
-              </label>
-            </div>
-
-            {/* Sort Controls */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-              <label className="relative flex-1 sm:max-w-xs">
-                <span className="sr-only">Sort</span>
-                <select
-                  value={sortKey}
-                  onChange={(e) =>
-                    handleSortChange(
-                      e.target.value as
-                        | "featured"
-                        | "priceAsc"
-                        | "priceDesc"
-                        | "alpha"
-                    )
-                  }
-                  className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="priceAsc">Price: Low to High</option>
-                  <option value="priceDesc">Price: High to Low</option>
-                  <option value="alpha">Alphabetical</option>
-                </select>
-              </label>
+              </svg>
+              <span>📱 Offline Mode - Showing your saved menu items</span>
+              <button
+                onClick={() => window.location.reload()}
+                className="ml-3 px-3 py-1 bg-white text-orange-500 rounded-md text-xs font-semibold hover:bg-gray-100 transition-colors"
+              >
+                Reconnect
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-      {/* Content */}
-      <section
-        className="px-4 sm:px-6 lg:px-8 pt-4 pb-8"
-        aria-live="polite"
-        aria-busy={false}
-      >
-        <div className="max-w-7xl mx-auto">
-          <h2 className="sr-only">{sectionList[activeSection]?.title}</h2>
-          <MenuGrid
-            items={filteredItems}
-            currencyFmt={currencyFmt}
-            dense={dense}
-          />
-        </div>
-      </section>
-      {/* Bottom Section */}
-      <footer className="px-4 sm:px-6 lg:px-8 pb-16 mt-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center animate-fade-in">
-            <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 flex flex-col items-center shadow-lg">
-              <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">
-                {bottomSection.title}
-              </h3>
-              <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-6 max-w-2xl">
-                {bottomSection.description}
+        )}
+        {/* Update Indicator */}
+        {isValidating && !loading && (
+          <div className="bg-blue-500 text-white px-4 py-2 text-center text-sm font-medium">
+            <div className="flex items-center justify-center gap-2">
+              <svg
+                className="animate-spin w-4 h-4"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>🔄 Updating menu...</span>
+            </div>
+          </div>
+        )}{" "}
+        {/* Page Header */}
+        <header className="px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 py-4 xs:py-5 sm:py-6 md:py-8 lg:py-10">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-3 xs:mb-4 sm:mb-6 animate-fade-in">
+              <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-tight mb-2 xs:mb-3 sm:mb-4 drop-shadow-lg text-black">
+                {title}
+              </h1>
+              <div className="flex justify-center mb-2 xs:mb-3 sm:mb-4" aria-hidden>
+                <div className="w-16 xs:w-20 sm:w-24 md:w-32 lg:w-40 xl:w-48 h-0.5 sm:h-1 rounded-full bg-black shadow-[0_0_15px_rgba(234,179,8,0.8)]"></div>
+              </div>
+              <p className="text-sm xs:text-base sm:text-lg md:text-xl lg:text-2xl text-black/90 max-w-4xl mx-auto leading-relaxed px-2 xs:px-3 sm:px-4">
+                {description}
               </p>
-              <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
-                {bottomSection.badges.map((badge, index) => (
-                  <span
-                    key={index}
-                    className="bg-gradient-to-br from-yellow-500/95 to-yellow-600/95 text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow border border-white/10"
-                  >
-                    {badge}
+            </div>
+          </div>
+        </header>
+        {/* Sticky Toolbar - Ultra Responsive Full Width Controls */}
+        <div className="top-0 z-30 px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 pb-3 md:pb-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-md border border-yellow-900/20 rounded-xl md:rounded-2xl shadow-xl p-2 xs:p-3 sm:p-4">
+              {/* Extra Small Devices (< 475px) - Ultra Compact */}
+              <div className="flex flex-col gap-2 xs:hidden">
+                {/* Search Bar - Compact */}
+                <label className="relative w-full">
+                  <span className="sr-only">Search menu</span>
+                  <input
+                    value={query}
+                    onChange={(e) => handleQueryChange(e.target.value)}
+                    placeholder="Search…"
+                    className="w-full rounded-lg bg-white/95 px-3 py-2.5 pr-10 text-sm text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
+                    aria-label="Search menu"
+                    autoComplete="off"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center">
+                    <MdSearch className="text-lg text-yellow-900" />
                   </span>
-                ))}
+                </label>
+
+                {/* Category and Sort - Full Width Stack */}
+                <div className="flex flex-col gap-2">
+                  <label className="relative">
+                    <span className="sr-only">Filter by category</span>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="w-full text-yellow-900 rounded-lg bg-white/95 px-3 py-2.5 text-xs border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                    >
+                      <option value="all">All Categories</option>
+                      {menuCategories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="relative">
+                    <span className="sr-only">Sort</span>
+                    <select
+                      value={sortKey}
+                      onChange={(e) =>
+                        handleSortChange(
+                          e.target.value as
+                            | "featured"
+                            | "priceAsc"
+                            | "priceDesc"
+                            | "alpha"
+                        )
+                      }
+                      className="w-full text-yellow-900 rounded-lg bg-white/95 px-3 py-2.5 text-xs border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                    >
+                      <option value="featured">Featured</option>
+                      <option value="priceAsc">Price: Low to High</option>
+                      <option value="priceDesc">Price: High to Low</option>
+                      <option value="alpha">Alphabetical</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Results Counter & Clear All - Ultra Compact */}
+                {(selectedCategory !== "all" ||
+                  debouncedQuery ||
+                  selectedTags.length > 0) && (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-white/80 bg-white/10 px-2 py-1.5 rounded-md backdrop-blur-sm border border-white/20 flex-1">
+                      <span className="font-medium">
+                        {filteredItems.length}
+                      </span>
+                      <span className="text-white/60 text-[10px]"> items</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedCategory("all");
+                        setQuery("");
+                        setSelectedTags([]);
+                        setSortKey("featured");
+                        setAnimateResults(true);
+                        setTimeout(() => setAnimateResults(false), 300);
+                      }}
+                      className="flex items-center gap-1 px-2 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-md transition-all duration-200 text-xs font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
+                      aria-label="Clear all filters"
+                    >
+                      <MdClear className="text-xs group-hover:rotate-90 transition-transform duration-200" />
+                      <span className="text-[10px]">Clear</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Small Mobile (475px-640px) - Stacked Layout */}
+              <div className="hidden xs:flex flex-col gap-3 sm:hidden">
+                {/* Search Bar - Full Width */}
+                <label className="relative w-full">
+                  <span className="sr-only">Search menu</span>
+                  <input
+                    value={query}
+                    onChange={(e) => handleQueryChange(e.target.value)}
+                    placeholder="Search dishes…"
+                    className="w-full rounded-xl bg-white/95 px-4 py-3 pr-12 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
+                    aria-label="Search menu"
+                    autoComplete="off"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                    <MdSearch className="text-xl text-yellow-900" />
+                  </span>
+                </label>
+
+                {/* Category and Sort - Side by Side */}
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="relative">
+                    <span className="sr-only">Filter by category</span>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 py-3 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                    >
+                      <option value="all">All Categories</option>
+                      {menuCategories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="relative">
+                    <span className="sr-only">Sort</span>
+                    <select
+                      value={sortKey}
+                      onChange={(e) =>
+                        handleSortChange(
+                          e.target.value as
+                            | "featured"
+                            | "priceAsc"
+                            | "priceDesc"
+                            | "alpha"
+                        )
+                      }
+                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 py-3 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                    >
+                      <option value="featured">Featured</option>
+                      <option value="priceAsc">Price: Low to High</option>
+                      <option value="priceDesc">Price: High to Low</option>
+                      <option value="alpha">Alphabetical</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Results Counter & Clear All - Mobile */}
+                {(selectedCategory !== "all" ||
+                  debouncedQuery ||
+                  selectedTags.length > 0) && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm text-white/80 bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/20 flex-1">
+                      <span className="font-medium">
+                        {filteredItems.length}
+                      </span>
+                      <span className="text-white/60">
+                        {" "}
+                        of {sectionList[activeSection]?.items?.length || 0}{" "}
+                        items
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedCategory("all");
+                        setQuery("");
+                        setSelectedTags([]);
+                        setSortKey("featured");
+                        setAnimateResults(true);
+                        setTimeout(() => setAnimateResults(false), 300);
+                      }}
+                      className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-lg transition-all duration-200 text-sm font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
+                      aria-label="Clear all filters"
+                    >
+                      <MdClear className="text-sm group-hover:rotate-90 transition-transform duration-200" />
+                      <span>Clear</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Tablet Portrait (640px-768px) - Hybrid Layout */}
+              <div className="hidden sm:flex md:hidden flex-col gap-3">
+                {/* Search Bar - Full Width */}
+                <label className="relative w-full">
+                  <span className="sr-only">Search menu</span>
+                  <input
+                    value={query}
+                    onChange={(e) => handleQueryChange(e.target.value)}
+                    placeholder="Search dishes…"
+                    className="w-full rounded-xl bg-white/95 px-5 py-3 pr-14 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
+                    aria-label="Search menu"
+                    autoComplete="off"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                    <MdSearch className="text-xl text-yellow-900" />
+                  </span>
+                </label>
+
+                {/* Controls Row - Category, Sort, Results & Clear */}
+                <div className="flex items-center gap-3">
+                  <label className="relative flex-1">
+                    <span className="sr-only">Filter by category</span>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-4 py-2.5 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                    >
+                      <option value="all">All Categories</option>
+                      {menuCategories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="relative flex-1">
+                    <span className="sr-only">Sort</span>
+                    <select
+                      value={sortKey}
+                      onChange={(e) =>
+                        handleSortChange(
+                          e.target.value as
+                            | "featured"
+                            | "priceAsc"
+                            | "priceDesc"
+                            | "alpha"
+                        )
+                      }
+                      className="w-full text-yellow-900 rounded-xl bg-white/95 px-4 py-2.5 text-sm border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                    >
+                      <option value="featured">Featured</option>
+                      <option value="priceAsc">Price: Low to High</option>
+                      <option value="priceDesc">Price: High to Low</option>
+                      <option value="alpha">Alphabetical</option>
+                    </select>
+                  </label>
+
+                  {/* Results Counter & Clear All */}
+                  {(selectedCategory !== "all" ||
+                    debouncedQuery ||
+                    selectedTags.length > 0) && (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="text-sm text-white/80 whitespace-nowrap bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/20">
+                        <span className="font-medium">
+                          {filteredItems.length}
+                        </span>
+                        <span className="text-white/60 hidden sm:inline">
+                          {" "}
+                          of {sectionList[activeSection]?.items?.length || 0}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedCategory("all");
+                          setQuery("");
+                          setSelectedTags([]);
+                          setSortKey("featured");
+                          setAnimateResults(true);
+                          setTimeout(() => setAnimateResults(false), 300);
+                        }}
+                        className="flex items-center gap-1 px-2 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-lg transition-all duration-200 text-sm font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
+                        aria-label="Clear all filters"
+                      >
+                        <MdClear className="text-sm group-hover:rotate-90 transition-transform duration-200" />
+                        <span className="hidden lg:inline">Clear</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop & Large Screens (768px+) - Single Row Layout */}
+              <div className="hidden md:flex gap-3 items-center justify-between">
+                {/* Search Bar */}
+                <label className="relative flex-1 max-w-xs xl:max-w-sm">
+                  <span className="sr-only">Search menu</span>
+                  <input
+                    value={query}
+                    onChange={(e) => handleQueryChange(e.target.value)}
+                    placeholder="Search dishes…"
+                    className="w-full rounded-xl bg-white/95 px-4 lg:px-5 py-2 lg:py-2.5 pr-12 lg:pr-14 text-base text-black shadow-inner border border-yellow-900/10 focus:ring-2 focus:ring-yellow-500 transition"
+                    aria-label="Search menu"
+                    autoComplete="off"
+                  />
+                  <span className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 flex items-center">
+                    <MdSearch className="text-xl text-yellow-900" />
+                  </span>
+                </label>
+
+                {/* Category Filter */}
+                <label className="relative flex-1 max-w-xs xl:max-w-sm">
+                  <span className="sr-only">Filter by category</span>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 lg:px-4 py-2 lg:py-2.5 text-sm lg:text-base border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                  >
+                    <option value="all">All Categories</option>
+                    {menuCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Sort Control */}
+                <label className="relative flex-1 max-w-xs xl:max-w-sm">
+                  <span className="sr-only">Sort</span>
+                  <select
+                    value={sortKey}
+                    onChange={(e) =>
+                      handleSortChange(
+                        e.target.value as
+                          | "featured"
+                          | "priceAsc"
+                          | "priceDesc"
+                          | "alpha"
+                      )
+                    }
+                    className="w-full text-yellow-900 rounded-xl bg-white/95 px-3 lg:px-4 py-2 lg:py-2.5 text-sm lg:text-base border border-yellow-900/10 shadow-sm focus:ring-2 focus:ring-yellow-500 transition"
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="priceAsc">Price: Low to High</option>
+                    <option value="priceDesc">Price: High to Low</option>
+                    <option value="alpha">Alphabetical</option>
+                  </select>
+                </label>
+
+                {/* Results Counter & Clear All Filters - Desktop */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {(selectedCategory !== "all" ||
+                    debouncedQuery ||
+                    selectedTags.length > 0) && (
+                    <>
+                      <div className="text-sm text-white/80 whitespace-nowrap bg-white/10 px-3 py-2 rounded-lg backdrop-blur-sm border border-white/20">
+                        <span className="font-medium">
+                          {filteredItems.length}
+                        </span>
+                        <span className="text-white/60">
+                          {" "}
+                          of {sectionList[activeSection]?.items?.length || 0}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedCategory("all");
+                          setQuery("");
+                          setSelectedTags([]);
+                          setSortKey("featured");
+                          setAnimateResults(true);
+                          setTimeout(() => setAnimateResults(false), 300);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 hover:text-red-100 rounded-lg transition-all duration-200 text-sm font-medium border border-red-400/20 hover:border-red-400/40 backdrop-blur-sm group"
+                        aria-label="Clear all filters"
+                      >
+                        <MdClear className="text-sm group-hover:rotate-90 transition-transform duration-200" />
+                        <span className="hidden lg:inline">Clear All</span>
+                        <span className="lg:hidden">Clear</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </footer>
-    </main>
+        {/* Content */}
+        <section
+          className="px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 pt-3 xs:pt-4 pb-6 xs:pb-8"
+          aria-live="polite"
+          aria-busy={false}
+        >
+          <div className="max-w-7xl mx-auto">
+            <h2 className="sr-only">{sectionList[activeSection]?.title}</h2>
+            <MenuGrid
+              items={filteredItems}
+              currencyFmt={currencyFmt}
+              dense={dense}
+              animateResults={animateResults}
+            />
+          </div>
+        </section>
+        {/* Bottom Section */}
+        <footer className="px-2 xs:px-3 sm:px-4 md:px-6 lg:px-8 pb-12 xs:pb-16 mt-6 xs:mt-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center animate-fade-in">
+              <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 xs:p-5 sm:p-6 md:p-8 flex flex-col items-center shadow-lg">
+                <h3 className="text-lg xs:text-xl sm:text-2xl font-bold text-white mb-3 xs:mb-4">
+                  {bottomSection.title}
+                </h3>
+                <p className="text-xs xs:text-sm sm:text-base text-white/80 leading-relaxed mb-4 xs:mb-5 sm:mb-6 max-w-2xl">
+                  {bottomSection.description}
+                </p>
+                <div className="flex flex-wrap justify-center gap-1.5 xs:gap-2 sm:gap-3">
+                  {bottomSection.badges.map((badge, index) => (
+                    <span
+                      key={index}
+                      className="bg-gradient-to-br from-yellow-500/95 to-yellow-600/95 text-black px-2 xs:px-3 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-full text-[10px] xs:text-xs sm:text-sm font-medium shadow border border-white/10"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </>
   );
 });
 
-// ---------- Subcomponents ----------
+// Enhanced MenuGrid with animations and better empty state
 const MenuGrid = memo(function MenuGrid({
   items,
   currencyFmt,
   dense,
+  animateResults,
 }: {
   items: MenuItem[];
   currencyFmt: Intl.NumberFormat;
   dense: boolean;
+  animateResults?: boolean;
 }) {
   if (!items.length) {
     return (
-      <div className="flex items-center justify-center py-16 sm:py-20 lg:py-24">
-        <div className="text-center max-w-md mx-auto px-4">
-          <p className="text-lg sm:text-xl font-semibold text-black mb-2">
-            No matching items
+      <div className="flex items-center justify-center py-20 sm:py-24 lg:py-32">
+        <div className="text-center max-w-lg mx-auto px-4 animate-fade-in">
+          <div className="mb-6">
+            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 flex items-center justify-center">
+              <FiFilter className="w-10 h-10 text-yellow-600" />
+            </div>
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-black mb-3">
+            🔍 No dishes found
+          </h3>
+          <p className="text-black/70 text-base sm:text-lg leading-relaxed mb-6">
+            We couldn't find any dishes matching your search. Try adjusting your
+            filters or search terms to discover more delicious options!
           </p>
-          <p className="text-black/70 text-sm sm:text-base">
-            Try clearing filters or using a different search term.
-          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <span className="px-4 py-2 bg-yellow-500/10 text-yellow-800 rounded-full text-sm font-medium">
+              💡 Try different keywords
+            </span>
+            <span className="px-4 py-2 bg-yellow-500/10 text-yellow-800 rounded-full text-sm font-medium">
+              🗂️ Change category
+            </span>
+            <span className="px-4 py-2 bg-yellow-500/10 text-yellow-800 rounded-full text-sm font-medium">
+              🧹 Clear filters
+            </span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <ul
-      className="
-        grid gap-2 sm:gap-4 lg:gap-6
-        grid-cols-2 
-        xs:grid-cols-2 
-        sm:grid-cols-3 
-        md:grid-cols-3 
-        lg:grid-cols-3 
-        xl:grid-cols-3 
-        2xl:grid-cols-3
-      "
-      role="list"
+    <div
+      className={`transition-all duration-300 ${
+        animateResults ? "opacity-75 scale-[0.98]" : "opacity-100 scale-100"
+      }`}
     >
-      {items.map((item, index) => (
-        <li key={`${item.name}-${index}`}>
-          <MenuCard item={item} index={index} currencyFmt={currencyFmt} />
-        </li>
-      ))}
-    </ul>
+      <ul
+        className={`
+          grid gap-2 xs:gap-3 sm:gap-4 lg:gap-5 xl:gap-6
+          grid-cols-1
+          xs:grid-cols-2 
+          sm:grid-cols-2
+          md:grid-cols-3 
+          lg:grid-cols-3 
+          xl:grid-cols-4
+          2xl:grid-cols-5
+          3xl:grid-cols-6
+          transition-all duration-300
+          auto-rows-fr
+        `}
+        role="list"
+      >
+        {items.map((item, index) => (
+          <li
+            key={`${item.name}-${index}`}
+            className="animate-fade-in"
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            <MenuCard item={item} index={index} currencyFmt={currencyFmt} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 });
 

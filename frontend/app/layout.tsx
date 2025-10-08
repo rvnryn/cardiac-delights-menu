@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/Style/globals.css";
-import Navbar from "@/app/Features/components/navigation/page";
 import ServiceWorkerProvider from "@/app/utils/ServiceWorkerProvider";
 
 const geistSans = Geist({
@@ -82,7 +81,6 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} `}>
         <ServiceWorkerProvider>
           <div id="root" className="min-h-screen">
-            <Navbar />
             {/* Main Content */}
             <main className="flex-1 min-w-0 px-2 sm:px-4 md:px-8 py-4 md:py-8 bg-gradient-to-br from-yellow-600/95 to-yellow-700/95">
               {children}
