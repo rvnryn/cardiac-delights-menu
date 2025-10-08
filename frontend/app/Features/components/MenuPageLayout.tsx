@@ -256,7 +256,7 @@ export default memo(function MenuPageLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen lg:ml-64 pt-20 lg:pt-0 flex items-center justify-center">
+      <div className="min-h-screen pt-20 lg:pt-0 flex items-center justify-center">
         <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-yellow-200/50 max-w-md w-full mx-auto">
           <div className="flex flex-col items-center text-center space-y-6">
             <div className="relative">
@@ -320,7 +320,7 @@ export default memo(function MenuPageLayout({
 
   if (error) {
     return (
-      <div className="min-h-screen lg:ml-64 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="bg-black/90 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-red-200/50 max-w-md w-full mx-auto">
           <div className="flex flex-col items-center text-center space-y-6">
             <div className="relative">
