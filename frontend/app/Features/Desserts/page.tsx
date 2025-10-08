@@ -6,12 +6,21 @@ import { useMenu } from "@/app/Features/components/hook/use-menu";
 export default function DessertsPage() {
   const { menu, loading, error } = useMenu();
 
+  type MenuItem = {
+    dish_name: string;
+    price: number;
+    image_url?: string;
+    description?: string;
+    stock_status?: string;
+    category?: string;
+  };
+
   const items = useMemo(() => {
     if (!menu.length) return [];
 
-    return menu
-      .filter((item) => item.category?.toLowerCase().includes("dessert"))
-      .map((item) => ({
+    return (menu as MenuItem[])
+      .filter((item: MenuItem) => item.category?.toLowerCase().includes("dessert"))
+      .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
         image: item.image_url || "/fallback-image.png",

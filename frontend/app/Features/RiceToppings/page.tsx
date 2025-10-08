@@ -3,6 +3,15 @@ import MenuPageLayout from "../components/MenuPageLayout";
 import { useMemo } from "react";
 import { useMenu } from "@/app/Features/components/hook/use-menu";
 
+interface MenuItem {
+  dish_name: string;
+  price: number;
+  image_url?: string;
+  description?: string;
+  stock_status?: string;
+  category?: string;
+}
+
 export default function RiceToppingsPage() {
   // Fetch all menu data - we'll filter client-side for better performance
   const { menu, loading, error } = useMenu();
@@ -10,9 +19,9 @@ export default function RiceToppingsPage() {
   const items = useMemo(() => {
     if (!menu.length) return [];
 
-    return menu
-      .filter((item) => item.category?.toLowerCase().includes("rice topping"))
-      .map((item) => ({
+    return (menu as MenuItem[])
+      .filter((item: MenuItem) => item.category?.toLowerCase().includes("rice topping"))
+      .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
         image: item.image_url || "/fallback-image.png",

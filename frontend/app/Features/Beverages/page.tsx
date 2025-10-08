@@ -6,15 +6,23 @@ import { useMenu } from "@/app/Features/components/hook/use-menu";
 export default function BeveragesPage() {
   const { menu, loading, error } = useMenu();
 
+  type MenuItem = {
+    dish_name: string;
+    category: string;
+    price: number;
+    image_url?: string;
+    description?: string;
+  };
+
   const items = useMemo(() => {
     console.log("🥤 Processing Beverages menu:", menu.length, "total items");
     const filtered = menu
-      .filter((item) => {
+      .filter((item: MenuItem) => {
         console.log(`🔍 Item: ${item.dish_name}, Category: "${item.category}"`);
         return item.category === "Beverage" || item.category === "Beverages";
       })
-      .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
-      .map((item) => ({
+      .sort((a: MenuItem, b: MenuItem) => a.dish_name.localeCompare(b.dish_name))
+      .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
         image: item.image_url || "/fallback-image.png",

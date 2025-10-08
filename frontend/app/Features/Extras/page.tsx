@@ -3,15 +3,24 @@ import MenuPageLayout from "../components/MenuPageLayout";
 import { useMemo } from "react";
 import { useMenu } from "@/app/Features/components/hook/use-menu";
 
+type MenuItem = {
+  dish_name: string;
+  price: number;
+  image_url?: string;
+  description?: string;
+  stock_status?: string;
+  category?: string;
+};
+
 export default function ExtrasPage() {
   const { menu, loading, error } = useMenu();
 
   const items = useMemo(() => {
     if (!menu.length) return [];
 
-    return menu
-      .filter((item) => item.category?.toLowerCase().includes("extra"))
-      .map((item) => ({
+    return (menu as MenuItem[])
+      .filter((item: MenuItem) => item.category?.toLowerCase().includes("extra"))
+      .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
         image: item.image_url || "/fallback-image.png",

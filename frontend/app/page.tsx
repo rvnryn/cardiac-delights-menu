@@ -18,6 +18,15 @@ const MenuTitle = memo(() => (
 
 MenuTitle.displayName = "MenuTitle";
 
+type MenuItem = {
+  menu_id: string;
+  dish_name: string;
+  price: number;
+  image_url?: string;
+  description?: string;
+  stock_status?: string;
+};
+
 export default function MenuPage() {
   // Fetch only essential fields for better performance
   const { menu, loading, error, isOffline } = useMenu(
@@ -33,7 +42,7 @@ export default function MenuPage() {
     console.log("📋 Stock status in raw data:", menu[0]?.stock_status); // Debug log
 
     return menu
-      .map((item) => {
+      .map((item: MenuItem) => {
         const mappedItem = {
           name: item.dish_name,
           price: item.price,
@@ -44,7 +53,24 @@ export default function MenuPage() {
         console.log("🔄 Mapped item:", mappedItem); // Debug log
         return mappedItem;
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort(
+        (
+          a: {
+            name: string;
+            price: number;
+            image: string;
+            description: string;
+            stockStatus?: string;
+          },
+          b: {
+            name: string;
+            price: number;
+            image: string;
+            description: string;
+            stockStatus?: string;
+          }
+        ) => a.name.localeCompare(b.name)
+      );
   }, [menu]);
 
   // Show loading only if we have no data at all

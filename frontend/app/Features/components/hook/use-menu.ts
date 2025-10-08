@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { FALLBACK_MENU } from "@/app/utils/fallback-menu";
-import { supabase } from "@/app/utils/Server/supabaseClient";
+import useSWR from "swr";
 
 export interface MenuItem {
   menu_id: number;
@@ -18,6 +18,24 @@ export interface MenuItem {
 const menuCacheMap = new Map<string, { data: MenuItem[]; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const OFFLINE_STORAGE_KEY = "cardiac_delights_menu_offline";
+
+// SWR fetcher function
+const fetcher = async (url: string) => {
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "Cache-Control": "no-cache",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log(`✅ SWR fetched ${data.length} items from ${url}`);
+  return data;
+};
 
 // Utility functions for offline storage
 const saveToOfflineStorage = (data: MenuItem[]) => {
@@ -46,169 +64,62 @@ const getFromOfflineStorage = (): MenuItem[] | null => {
 };
 
 export function useMenu(category?: string, fields?: string) {
-  const [menu, setMenu] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(false);
+  const backendUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000";
 
-  const fetchMenu = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Build URL with query parameters
+  const params = new URLSearchParams();
+  if (category) params.append("category", category);
+  if (fields) params.append("fields", fields);
 
-      const now = Date.now();
-      const cacheKey = category || "all";
+  const url = `${backendUrl}/api/menu${
+    params.toString() ? "?" + params.toString() : ""
+  }`;
+  const swrKey = category ? `menu-${category}` : "menu-all";
 
-      // Check memory cache first
-      const cached = menuCacheMap.get(cacheKey);
-      if (cached && now - cached.timestamp < CACHE_DURATION) {
-        setMenu(cached.data);
-        setLoading(false);
-        setIsOffline(false);
-        return;
-      }
-
-      const backendUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000";
-
-      // Build optimized query parameters
-      const params = new URLSearchParams();
-      if (category) params.append("category", category);
-      if (fields) params.append("fields", fields);
-
-      const url = `${backendUrl}/api/menu${
-        params.toString() ? "?" + params.toString() : ""
-      }`;
-
-      console.log(`🔄 Fetching menu data for: ${cacheKey}`, { url, category });
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-      const response = await fetch(url, {
-        headers: {
-          Accept: "application/json",
-          "Cache-Control": "no-cache", // Force fresh data
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      console.log(`✅ Received ${data.length} items for category: ${cacheKey}`);
-
-      // Update cache with category-specific data
-      menuCacheMap.set(cacheKey, { data, timestamp: now });
-
-      // Only save full menu to offline storage
-      if (!category) {
+  // Use SWR for data fetching with automatic revalidation
+  const {
+    data: menu,
+    error,
+    isLoading,
+    mutate: refetch,
+  } = useSWR(swrKey, () => fetcher(url), {
+    refreshInterval: 30000, // Refresh every 30 seconds
+    revalidateOnFocus: true, // Refresh when window gets focus
+    revalidateOnReconnect: true, // Refresh when reconnected
+    dedupingInterval: 5000, // Dedupe requests within 5 seconds
+    fallbackData: category ? [] : FALLBACK_MENU, // Use fallback data immediately
+    onSuccess: (data) => {
+      // Save full menu to offline storage
+      if (!category && data.length > 0) {
         saveToOfflineStorage(data);
       }
-
-      setMenu(data);
-      setIsOffline(false);
-    } catch (err: unknown) {
-      console.warn("Network request failed, trying offline storage:", err);
-
-      // Try to load from offline storage first (your actual menu data)
+    },
+    onError: (err) => {
+      console.warn("SWR fetch failed, trying offline storage:", err);
+      // Try to load from offline storage on error
       const offlineMenu = getFromOfflineStorage();
       if (offlineMenu && offlineMenu.length > 0) {
-        console.log(
-          "Loading YOUR menu from offline storage:",
-          offlineMenu.length,
-          "items"
-        );
-        // Filter by category if specified
         const filteredMenu = category
-          ? offlineMenu.filter((item) => item.category === category)
+          ? offlineMenu.filter((item: MenuItem) => item.category === category)
           : offlineMenu;
-
-        setMenu(filteredMenu);
-        setIsOffline(true);
-        setError(null);
-      } else {
-        // Only use fallback menu if no real menu data was ever cached
-        console.log(
-          "No cached menu found, using basic fallback menu:",
-          FALLBACK_MENU.length,
-          "items"
-        );
-        const filteredFallback = category
-          ? FALLBACK_MENU.filter((item) => item.category === category)
-          : FALLBACK_MENU;
-
-        setMenu(filteredFallback);
-        setIsOffline(true);
-        setError(null);
+        return filteredMenu;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [category, fields]);
+    },
+  });
 
-  // Check for immediate cache availability to reduce initial loading time
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Monitor connection status
   useEffect(() => {
-    const now = Date.now();
-    const cacheKey = category || "all";
+    setIsOffline(!!error);
+  }, [error]);
 
-    // Try memory cache first
-    const cached = menuCacheMap.get(cacheKey);
-    if (cached && now - cached.timestamp < CACHE_DURATION) {
-      setMenu(cached.data);
-      setLoading(false);
-      return;
-    }
-
-    // For full menu (no category), try offline storage for immediate display
-    if (!category) {
-      const offlineMenu = getFromOfflineStorage();
-      if (offlineMenu && offlineMenu.length > 0) {
-        setMenu(offlineMenu);
-        setLoading(false);
-        // Still fetch fresh data in background
-        setTimeout(() => fetchMenu(), 100);
-        return;
-      }
-
-      // Use fallback menu immediately if no cache available
-      if (FALLBACK_MENU.length > 0) {
-        setMenu(FALLBACK_MENU);
-        setLoading(false);
-        // Fetch real data in background
-        setTimeout(() => fetchMenu(), 100);
-      }
-    } else {
-      // For category-specific requests, always fetch fresh data
-      fetchMenu();
-    }
-  }, [category, fields, fetchMenu]);
-
-  useEffect(() => {
-    // Always try to fetch fresh data to check connectivity
-    fetchMenu();
-  }, [fetchMenu]);
-
-  // Real-time subscription for menu updates
-  useEffect(() => {
-    console.log("🔌 Setting up Supabase real-time subscription");
-
-    // For now, disable real-time and use periodic refresh instead
-    const interval = setInterval(() => {
-      console.log("🔄 Periodic menu refresh");
-      fetchMenu();
-    }, 30000); // Refresh every 30 seconds
-
-    return () => {
-      console.log("🔌 Cleaning up periodic refresh");
-      clearInterval(interval);
-    };
-  }, [fetchMenu]);
-
-  return { menu, loading, error, isOffline, refetch: fetchMenu };
+  return {
+    menu: menu || [],
+    loading: isLoading,
+    error: error?.message || null,
+    isOffline,
+    refetch,
+  };
 }
