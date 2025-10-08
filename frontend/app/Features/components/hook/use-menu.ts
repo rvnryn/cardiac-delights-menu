@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { FALLBACK_MENU } from "@/app/utils/fallback-menu";
+import { supabase } from "@/app/utils/Server/supabaseClient";
 
 export interface MenuItem {
   menu_id: number;
@@ -13,9 +14,8 @@ export interface MenuItem {
   updated_at?: string;
 }
 
-// Cache for menu data
-let menuCache: MenuItem[] | null = null;
-let cacheTimestamp = 0;
+// Cache for menu data - use Map to cache by category
+const menuCacheMap = new Map<string, { data: MenuItem[]; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const OFFLINE_STORAGE_KEY = "cardiac_delights_menu_offline";
 
@@ -54,58 +54,52 @@ export function useMenu(category?: string, fields?: string) {
   // Check for immediate cache availability to reduce initial loading time
   useEffect(() => {
     const now = Date.now();
+    const cacheKey = category || "all";
 
     // Try memory cache first
-    if (
-      menuCache &&
-      now - cacheTimestamp < CACHE_DURATION &&
-      !category &&
-      !fields
-    ) {
-      setMenu(menuCache);
+    const cached = menuCacheMap.get(cacheKey);
+    if (cached && now - cached.timestamp < CACHE_DURATION) {
+      setMenu(cached.data);
       setLoading(false);
       return;
     }
 
-    // Try offline storage for immediate display
-    const offlineMenu = getFromOfflineStorage();
-    if (offlineMenu && offlineMenu.length > 0) {
-      setMenu(offlineMenu);
-      setLoading(false);
-      // Don't set offline flag here - let fetchMenu determine connectivity
-      // Still fetch fresh data in background
-      setTimeout(() => fetchMenu(), 100);
-      return;
-    }
+    // For full menu (no category), try offline storage for immediate display
+    if (!category) {
+      const offlineMenu = getFromOfflineStorage();
+      if (offlineMenu && offlineMenu.length > 0) {
+        setMenu(offlineMenu);
+        setLoading(false);
+        // Still fetch fresh data in background
+        setTimeout(() => fetchMenu(), 100);
+        return;
+      }
 
-    // Use fallback menu immediately if no cache available
-    if (FALLBACK_MENU.length > 0) {
-      setMenu(FALLBACK_MENU);
-      setLoading(false);
-      // Don't set offline flag here - let fetchMenu determine connectivity
-      // Fetch real data in background
-      setTimeout(() => fetchMenu(), 100);
+      // Use fallback menu immediately if no cache available
+      if (FALLBACK_MENU.length > 0) {
+        setMenu(FALLBACK_MENU);
+        setLoading(false);
+        // Fetch real data in background
+        setTimeout(() => fetchMenu(), 100);
+      }
+    } else {
+      // For category-specific requests, always fetch fresh data
+      fetchMenu();
     }
-  }, []);
+  }, [category, fields]);
 
   const fetchMenu = useCallback(async () => {
     try {
-      // Only set loading if we don't already have data
-      const hasData = menu.length > 0;
-      if (!hasData) {
-        setLoading(true);
-      }
+      setLoading(true);
       setError(null);
 
-      // Check memory cache first
       const now = Date.now();
-      if (
-        menuCache &&
-        now - cacheTimestamp < CACHE_DURATION &&
-        !category &&
-        !fields
-      ) {
-        setMenu(menuCache);
+      const cacheKey = category || "all";
+
+      // Check memory cache first
+      const cached = menuCacheMap.get(cacheKey);
+      if (cached && now - cached.timestamp < CACHE_DURATION) {
+        setMenu(cached.data);
         setLoading(false);
         setIsOffline(false);
         return;
@@ -123,13 +117,15 @@ export function useMenu(category?: string, fields?: string) {
         params.toString() ? "?" + params.toString() : ""
       }`;
 
+      console.log(`🔄 Fetching menu data for: ${cacheKey}`, { url, category });
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
-          "Cache-Control": "public, max-age=300", // 5 minutes
+          "Cache-Control": "no-cache", // Force fresh data
         },
         signal: controller.signal,
       });
@@ -142,20 +138,18 @@ export function useMenu(category?: string, fields?: string) {
 
       const data = await response.json();
 
-      // Debug: Log the first menu item to check if stock_status is included
-      if (data && data.length > 0) {
-        console.log("🔍 Sample menu item from API:", data[0]);
-        console.log("🔍 Stock status field:", data[0].stock_status);
-        console.log("🔍 All fields in first item:", Object.keys(data[0]));
+      console.log(`✅ Received ${data.length} items for category: ${cacheKey}`);
+
+      // Update cache with category-specific data
+      menuCacheMap.set(cacheKey, { data, timestamp: now });
+
+      // Only save full menu to offline storage
+      if (!category) {
+        saveToOfflineStorage(data);
       }
 
-      // Update memory cache and offline storage for all requests (not just full menu)
-      menuCache = data;
-      cacheTimestamp = now;
-      saveToOfflineStorage(data);
-
       setMenu(data);
-      setIsOffline(false); // Clear offline flag when network succeeds
+      setIsOffline(false);
     } catch (err: unknown) {
       console.warn("Network request failed, trying offline storage:", err);
 
@@ -167,9 +161,14 @@ export function useMenu(category?: string, fields?: string) {
           offlineMenu.length,
           "items"
         );
-        setMenu(offlineMenu);
+        // Filter by category if specified
+        const filteredMenu = category
+          ? offlineMenu.filter((item) => item.category === category)
+          : offlineMenu;
+
+        setMenu(filteredMenu);
         setIsOffline(true);
-        setError(null); // Clear error since we have your actual menu data
+        setError(null);
       } else {
         // Only use fallback menu if no real menu data was ever cached
         console.log(
@@ -177,9 +176,13 @@ export function useMenu(category?: string, fields?: string) {
           FALLBACK_MENU.length,
           "items"
         );
-        setMenu(FALLBACK_MENU);
+        const filteredFallback = category
+          ? FALLBACK_MENU.filter((item) => item.category === category)
+          : FALLBACK_MENU;
+
+        setMenu(filteredFallback);
         setIsOffline(true);
-        setError(null); // Clear error since we have fallback data
+        setError(null);
       }
     } finally {
       setLoading(false);
@@ -190,6 +193,82 @@ export function useMenu(category?: string, fields?: string) {
     // Always try to fetch fresh data to check connectivity
     fetchMenu();
   }, [fetchMenu]);
+
+  // Real-time subscription for menu updates
+  useEffect(() => {
+    const channel = supabase.channel("menu-changes").on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "menu",
+      },
+      (payload: any) => {
+        console.log("🔄 Real-time menu update:", payload);
+
+        const { eventType, new: newRow, old: oldRow } = payload;
+
+        setMenu((currentMenu) => {
+          let updatedMenu = [...currentMenu];
+
+          if (eventType === "INSERT" && newRow) {
+            // Add new item if it doesn't exist
+            const exists = updatedMenu.find(
+              (item) => item.menu_id === newRow.menu_id
+            );
+            if (!exists) {
+              updatedMenu.push(newRow as MenuItem);
+            }
+          }
+
+          if (eventType === "UPDATE" && newRow) {
+            // Update existing item
+            const index = updatedMenu.findIndex(
+              (item) => item.menu_id === newRow.menu_id
+            );
+            if (index !== -1) {
+              updatedMenu[index] = {
+                ...updatedMenu[index],
+                ...newRow,
+              } as MenuItem;
+            }
+          }
+
+          if (eventType === "DELETE" && oldRow) {
+            // Remove deleted item
+            updatedMenu = updatedMenu.filter(
+              (item) => item.menu_id !== oldRow.menu_id
+            );
+          }
+
+          // Update cache and offline storage
+          const allMenuKey = "all";
+          const currentAllMenu = menuCacheMap.get(allMenuKey);
+          if (currentAllMenu) {
+            menuCacheMap.set(allMenuKey, {
+              data: updatedMenu,
+              timestamp: Date.now(),
+            });
+            saveToOfflineStorage(updatedMenu);
+          }
+
+          return updatedMenu;
+        });
+      }
+    );
+
+    channel.subscribe((status: string) => {
+      console.log("📡 Supabase subscription status:", status);
+      if (status === "SUBSCRIBED") {
+        setIsOffline(false);
+      }
+    });
+
+    return () => {
+      console.log("🔌 Unsubscribing from menu changes");
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return { menu, loading, error, isOffline, refetch: fetchMenu };
 }

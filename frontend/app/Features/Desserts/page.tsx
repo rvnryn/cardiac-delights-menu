@@ -6,19 +6,24 @@ import { useMenu } from "@/app/Features/components/hook/use-menu";
 export default function DessertsPage() {
   const { menu, loading, error } = useMenu();
 
-  const items = useMemo(
-    () =>
-      menu
-        .filter((item) => item.category === "Desserts")
-        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
-        .map((item) => ({
-          name: item.dish_name,
-          price: item.price,
-          image: item.image_url || "/fallback-image.png",
-          description: item.description || "No description available.",
-        })),
-    [menu]
-  );
+  const items = useMemo(() => {
+    console.log("🍰 Processing Desserts menu:", menu.length, "total items");
+    const filtered = menu
+      .filter((item) => {
+        console.log(`🔍 Item: ${item.dish_name}, Category: "${item.category}"`);
+        return item.category === "Desserts";
+      })
+      .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+      .map((item) => ({
+        name: item.dish_name,
+        price: item.price,
+        image: item.image_url || "/fallback-image.png",
+        description: item.description || "No description available.",
+      }));
+
+    console.log("✅ Desserts filtered items:", filtered.length);
+    return filtered;
+  }, [menu]);
 
   return (
     <MenuPageLayout

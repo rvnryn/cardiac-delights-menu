@@ -4,21 +4,31 @@ import { useMemo } from "react";
 import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function RiceToppingsPage() {
+  // Fetch all menu data - we'll filter client-side for better performance
   const { menu, loading, error } = useMenu();
 
-  const items = useMemo(
-    () =>
-      menu
-        .filter((item) => item.category === "Rice Toppings")
-        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
-        .map((item) => ({
-          name: item.dish_name,
-          price: item.price,
-          image: item.image_url || "/fallback-image.png",
-          description: item.description || "No description available.",
-        })),
-    [menu]
-  );
+  const items = useMemo(() => {
+    console.log(
+      "🍚 Processing Rice Toppings menu:",
+      menu.length,
+      "total items"
+    );
+    const filtered = menu
+      .filter((item) => {
+        console.log(`🔍 Item: ${item.dish_name}, Category: "${item.category}"`);
+        return item.category === "Rice Toppings";
+      })
+      .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+      .map((item) => ({
+        name: item.dish_name,
+        price: item.price,
+        image: item.image_url || "/fallback-image.png",
+        description: item.description || "No description available.",
+      }));
+
+    console.log("✅ Rice Toppings filtered items:", filtered.length);
+    return filtered;
+  }, [menu]);
 
   return (
     <MenuPageLayout

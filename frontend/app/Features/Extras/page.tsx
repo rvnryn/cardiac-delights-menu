@@ -6,19 +6,24 @@ import { useMenu } from "@/app/Features/components/hook/use-menu";
 export default function ExtrasPage() {
   const { menu, loading, error } = useMenu();
 
-  const items = useMemo(
-    () =>
-      menu
-        .filter((item) => item.category === "Extras")
-        .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
-        .map((item) => ({
-          name: item.dish_name,
-          price: item.price,
-          image: item.image_url || "/fallback-image.png",
-          description: item.description || "No description available.",
-        })),
-    [menu]
-  );
+  const items = useMemo(() => {
+    console.log("🍽️ Processing Extras menu:", menu.length, "total items");
+    const filtered = menu
+      .filter((item) => {
+        console.log(`🔍 Item: ${item.dish_name}, Category: "${item.category}"`);
+        return item.category === "Extras";
+      })
+      .sort((a, b) => a.dish_name.localeCompare(b.dish_name))
+      .map((item) => ({
+        name: item.dish_name,
+        price: item.price,
+        image: item.image_url || "/fallback-image.png",
+        description: item.description || "No description available.",
+      }));
+
+    console.log("✅ Extras filtered items:", filtered.length);
+    return filtered;
+  }, [menu]);
 
   return (
     <MenuPageLayout
