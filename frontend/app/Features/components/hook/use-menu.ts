@@ -1,26 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { FALLBACK_MENU } from "@/app/utils/fallback-menu";
-import useSWR from "swr";
+import { menuDB, MenuItem } from "@/app/utils/indexeddb";
 
-export interface MenuItem {
-  menu_id: number;
-  dish_name: string;
-  image_url: string;
-  category: string;
-  price: number;
-  description?: string;
-  stock_status: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-// Cache for menu data - use Map to cache by category
-const menuCacheMap = new Map<string, { data: MenuItem[]; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Cache for menu data
+const CACHE_DURATION = 30 * 1000; // 30 seconds
 const OFFLINE_STORAGE_KEY = "cardiac_delights_menu_offline";
 
-// SWR fetcher function
-const fetcher = async (url: string) => {
+// Network fetcher function
+const fetchMenuFromNetwork = async (url: string): Promise<MenuItem[]> => {
   const response = await fetch(url, {
     headers: {
       Accept: "application/json",
@@ -33,37 +19,17 @@ const fetcher = async (url: string) => {
   }
 
   const data = await response.json();
-  console.log(`✅ SWR fetched ${data.length} items from ${url}`);
+  console.log(`✅ Fetched ${data.length} items from network`);
   return data;
 };
 
-// Utility functions for offline storage
-const saveToOfflineStorage = (data: MenuItem[]) => {
-  try {
-    const offlineData = {
-      menu: data,
-      savedAt: Date.now(),
-    };
-    localStorage.setItem(OFFLINE_STORAGE_KEY, JSON.stringify(offlineData));
-  } catch (error) {
-    console.warn("Could not save menu to offline storage:", error);
-  }
-};
-
-const getFromOfflineStorage = (): MenuItem[] | null => {
-  try {
-    const stored = localStorage.getItem(OFFLINE_STORAGE_KEY);
-    if (!stored) return null;
-
-    const { menu } = JSON.parse(stored);
-    return menu;
-  } catch (error) {
-    console.warn("Could not load menu from offline storage:", error);
-    return null;
-  }
-};
-
 export function useMenu(category?: string, fields?: string) {
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+
   const backendUrl =
     process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000";
 
@@ -75,51 +41,137 @@ export function useMenu(category?: string, fields?: string) {
   const url = `${backendUrl}/api/menu${
     params.toString() ? "?" + params.toString() : ""
   }`;
-  const swrKey = category ? `menu-${category}` : "menu-all";
 
-  // Use SWR for data fetching with automatic revalidation
-  const {
-    data: menu,
-    error,
-    isLoading,
-    mutate: refetch,
-  } = useSWR(swrKey, () => fetcher(url), {
-    refreshInterval: 30000, // Refresh every 30 seconds
-    revalidateOnFocus: true, // Refresh when window gets focus
-    revalidateOnReconnect: true, // Refresh when reconnected
-    dedupingInterval: 5000, // Dedupe requests within 5 seconds
-    fallbackData: category ? [] : FALLBACK_MENU, // Use fallback data immediately
-    onSuccess: (data) => {
-      // Save full menu to offline storage
-      if (!category && data.length > 0) {
-        saveToOfflineStorage(data);
+  const loadMenu = useCallback(
+    async (showLoading = true) => {
+      try {
+        if (showLoading) setLoading(true);
+        setIsValidating(true);
+        setError(null);
+
+        // Initialize IndexedDB
+        await menuDB.init();
+
+        // Try to get cached data first (instant loading)
+        const cachedData = await menuDB.getMenu(category);
+
+        if (cachedData.length > 0) {
+          console.log(
+            `⚡ Instant load: ${cachedData.length} items from IndexedDB`
+          );
+          setMenu(cachedData);
+          setLoading(false);
+
+          // Check cache age
+          const cacheAge = await menuDB.getCacheAge();
+          const shouldRefresh = !cacheAge || cacheAge > CACHE_DURATION;
+
+          if (!shouldRefresh) {
+            console.log(
+              `🎯 Cache is fresh (${Math.round((cacheAge ?? 0) / 1000)}s old)`
+            );
+            setIsValidating(false);
+            return;
+          }
+
+          console.log(
+            `🔄 Cache is stale (${Math.round(
+              (cacheAge ?? 0) / 1000
+            )}s old), refreshing...`
+          );
+        }
+
+        // Fetch fresh data from network
+        try {
+          const freshData = await fetchMenuFromNetwork(url);
+
+          // Save to IndexedDB for future instant loading
+          if (!category && freshData.length > 0) {
+            await menuDB.saveMenu(freshData);
+          }
+
+          // Filter data if category is specified
+          const filteredData = category
+            ? freshData.filter((item) => item.category === category)
+            : freshData;
+
+          setMenu(filteredData);
+          setIsOffline(false);
+          console.log(
+            `🌐 Updated with fresh data: ${filteredData.length} items`
+          );
+        } catch (networkError) {
+          console.warn("Network request failed:", networkError);
+          setIsOffline(true);
+
+          // If no cached data and network failed, show error
+          if (cachedData.length === 0) {
+            setError("Unable to load menu. Please check your connection.");
+            setMenu([]);
+          }
+          // If we have cached data, we already showed it above
+        }
+      } catch (dbError) {
+        console.error("Database error:", dbError);
+        setError("Failed to load menu data");
+        setMenu([]);
+      } finally {
+        setLoading(false);
+        setIsValidating(false);
       }
     },
-    onError: (err) => {
-      console.warn("SWR fetch failed, trying offline storage:", err);
-      // Try to load from offline storage on error
-      const offlineMenu = getFromOfflineStorage();
-      if (offlineMenu && offlineMenu.length > 0) {
-        const filteredMenu = category
-          ? offlineMenu.filter((item: MenuItem) => item.category === category)
-          : offlineMenu;
-        return filteredMenu;
-      }
-    },
-  });
+    [url, category]
+  );
 
-  const [isOffline, setIsOffline] = useState(false);
-
-  // Monitor connection status
+  // Initial load
   useEffect(() => {
-    setIsOffline(!!error);
-  }, [error]);
+    loadMenu();
+  }, [loadMenu]);
+
+  // Auto-refresh every 30 seconds when page is visible
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        loadMenu(false); // Background refresh without loading state
+      }
+    }, CACHE_DURATION);
+
+    return () => clearInterval(interval);
+  }, [loadMenu]);
+
+  // Refresh when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadMenu(false);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [loadMenu]);
+
+  const refetch = useCallback(() => {
+    loadMenu(true);
+  }, [loadMenu]);
+
+  const clearCache = useCallback(async () => {
+    try {
+      await menuDB.clearCache();
+      loadMenu(true);
+    } catch (error) {
+      console.error("Failed to clear cache:", error);
+    }
+  }, [loadMenu]);
 
   return {
-    menu: menu || [],
-    loading: isLoading,
-    error: error?.message || null,
+    menu,
+    loading,
+    error,
     isOffline,
+    isValidating,
     refetch,
+    clearCache,
   };
 }

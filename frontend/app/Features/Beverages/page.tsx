@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function BeveragesPage() {
-  const { menu, loading, error } = useMenu();
+  const { menu, loading, error, isValidating } = useMenu();
 
   type MenuItem = {
     dish_name: string;
@@ -21,7 +21,9 @@ export default function BeveragesPage() {
         console.log(`🔍 Item: ${item.dish_name}, Category: "${item.category}"`);
         return item.category === "Beverage" || item.category === "Beverages";
       })
-      .sort((a: MenuItem, b: MenuItem) => a.dish_name.localeCompare(b.dish_name))
+      .sort((a: MenuItem, b: MenuItem) =>
+        a.dish_name.localeCompare(b.dish_name)
+      )
       .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
@@ -61,6 +63,7 @@ export default function BeveragesPage() {
       }}
       loading={loading}
       error={error}
+      isValidating={isValidating}
     />
   );
 }

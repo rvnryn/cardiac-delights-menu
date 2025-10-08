@@ -19,7 +19,7 @@ const MenuTitle = memo(() => (
 MenuTitle.displayName = "MenuTitle";
 
 type MenuItem = {
-  menu_id: string;
+  menu_id: string | number;
   dish_name: string;
   price: number;
   image_url?: string;

@@ -14,13 +14,15 @@ interface MenuItem {
 
 export default function RiceToppingsPage() {
   // Fetch all menu data - we'll filter client-side for better performance
-  const { menu, loading, error } = useMenu();
+  const { menu, loading, error, isValidating } = useMenu();
 
   const items = useMemo(() => {
     if (!menu.length) return [];
 
     return (menu as MenuItem[])
-      .filter((item: MenuItem) => item.category?.toLowerCase().includes("rice topping"))
+      .filter((item: MenuItem) =>
+        item.category?.toLowerCase().includes("rice topping")
+      )
       .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
@@ -59,6 +61,7 @@ export default function RiceToppingsPage() {
       }}
       loading={loading}
       error={error}
+      isValidating={isValidating}
     />
   );
 }

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useMenu } from "@/app/Features/components/hook/use-menu";
 
 export default function SizzlersPage() {
-  const { menu, loading, error } = useMenu();
+  const { menu, loading, error, isValidating } = useMenu();
 
   type MenuItem = {
     dish_name: string;
@@ -19,7 +19,9 @@ export default function SizzlersPage() {
     if (!menu.length) return [];
 
     return (menu as MenuItem[])
-      .filter((item: MenuItem) => item.category?.toLowerCase().includes("sizzler"))
+      .filter((item: MenuItem) =>
+        item.category?.toLowerCase().includes("sizzler")
+      )
       .map((item: MenuItem) => ({
         name: item.dish_name,
         price: item.price,
@@ -58,6 +60,7 @@ export default function SizzlersPage() {
       }}
       loading={loading}
       error={error}
+      isValidating={isValidating}
     />
   );
 }
