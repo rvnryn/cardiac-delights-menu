@@ -25,17 +25,14 @@ interface CachedData {
 let memoryCache: CachedData | null = null;
 
 const saveToCache = (menu: MenuItem[]) => {
+  if (typeof window === "undefined") return;
   try {
     const cacheData: CachedData = {
       menu,
       timestamp: Date.now(),
     };
-
-    // Save to memory for instant access
     memoryCache = cacheData;
-
-    // Save to localStorage for persistence
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
     console.log(`💾 Cached ${menu.length} items`);
   } catch (error) {
     console.warn("Failed to save cache:", error);
@@ -43,41 +40,25 @@ const saveToCache = (menu: MenuItem[]) => {
 };
 
 const getFromCache = (): MenuItem[] | null => {
+  if (typeof window === "undefined") return null;
   try {
-    // Check memory first (instant)
     if (memoryCache) {
       const age = Date.now() - memoryCache.timestamp;
       if (age < CACHE_DURATION) {
-        console.log(
-          `⚡ Instant load from memory: ${memoryCache.menu.length} items`
-        );
+        console.log(`⚡ Instant load from memory: ${memoryCache.menu.length} items`);
         return memoryCache.menu;
       }
     }
-
-    // Check localStorage
-    const cached = localStorage.getItem(CACHE_KEY);
+    const cached = window.localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
-
     const cacheData: CachedData = JSON.parse(cached);
     const age = Date.now() - cacheData.timestamp;
-
-    // Update memory cache
     memoryCache = cacheData;
-
     if (age < CACHE_DURATION) {
-      console.log(
-        `🗄️ Fast load from localStorage: ${cacheData.menu.length} items`
-      );
+      console.log(`🗄️ Fast load from localStorage: ${cacheData.menu.length} items`);
       return cacheData.menu;
     }
-
-    // Return stale data but mark for refresh
-    console.log(
-      `📱 Stale data loaded: ${cacheData.menu.length} items (${Math.round(
-        age / 1000
-      )}s old)`
-    );
+    console.log(`📱 Stale data loaded: ${cacheData.menu.length} items (${Math.round(age / 1000)}s old)`);
     return cacheData.menu;
   } catch (error) {
     console.warn("Failed to load cache:", error);
@@ -86,14 +67,13 @@ const getFromCache = (): MenuItem[] | null => {
 };
 
 const isCacheFresh = (): boolean => {
+  if (typeof window === "undefined") return false;
   if (memoryCache) {
     return Date.now() - memoryCache.timestamp < CACHE_DURATION;
   }
-
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
+    const cached = window.localStorage.getItem(CACHE_KEY);
     if (!cached) return false;
-
     const cacheData: CachedData = JSON.parse(cached);
     return Date.now() - cacheData.timestamp < CACHE_DURATION;
   } catch {
@@ -102,7 +82,7 @@ const isCacheFresh = (): boolean => {
 };
 
 export function useMenu(category?: string, fields?: string) {
-  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [menu, setMenu] = useState<MenuItem[]>(() => []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
@@ -132,8 +112,10 @@ export function useMenu(category?: string, fields?: string) {
     }
 
     const data = await response.json();
-    console.log(`✅ Fetched ${data.length} items from network`);
-    return data;
+    // Backend returns {items: [...], page: 1, ...} format
+    const items = data.items || data;
+    console.log(`✅ Fetched ${items.length} items from network`);
+    return items;
   }, [backendUrl, category, fields]);
 
   const loadMenu = useCallback(
@@ -202,32 +184,36 @@ export function useMenu(category?: string, fields?: string) {
 
   // Initial load
   useEffect(() => {
-    loadMenu();
+    if (typeof window !== "undefined") {
+      loadMenu();
+    }
   }, [loadMenu]);
 
   // Refresh when page becomes visible
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const handleVisibilityChange = () => {
-      if (!document.hidden && !isCacheFresh()) {
+      if (typeof document !== "undefined" && !document.hidden && !isCacheFresh()) {
         loadMenu(false);
       }
     };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [loadMenu]);
 
   const refetch = useCallback(() => {
-    // Clear cache and reload
     memoryCache = null;
-    localStorage.removeItem(CACHE_KEY);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(CACHE_KEY);
+    }
     loadMenu(true);
   }, [loadMenu]);
 
   const clearCache = useCallback(() => {
     memoryCache = null;
-    localStorage.removeItem(CACHE_KEY);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(CACHE_KEY);
+    }
     console.log("🗑️ Cache cleared");
   }, []);
 

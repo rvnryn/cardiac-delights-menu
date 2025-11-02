@@ -8,7 +8,7 @@ import MenuPageLayout from "@/app/Features/components/MenuPageLayout";
 const MenuTitle = memo(() => (
   <>
     <span className="block text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-primary-dark mb-2 xs:mb-3 tracking-tight animate-fade-in bg-black bg-clip-text text-transparent drop-shadow-lg">
-      🍽️ Our Delicious Menus
+      Our Delicious Menus
     </span>
     <span className="block text-sm xs:text-base sm:text-lg md:text-xl text-primary-dark/80 font-medium animate-fade-in delay-100 max-w-2xl mx-auto leading-relaxed">
       Discover culinary perfection with every bite - from sizzling specialties

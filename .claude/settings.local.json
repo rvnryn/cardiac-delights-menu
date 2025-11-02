@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venvScriptspython.exe -m pip install fastapi-cache2==0.2.2)",
+      "Bash(\".venv/Scripts/python.exe\" -m pip install fastapi-cache2==0.2.2)",
+      "Bash(\".venv/Scripts/python.exe\" -c \"import fastapi_cache; print(fastapi_cache.__version__)\")",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(python:*)",
+      "Bash(if exist .next rmdir /s /q .next)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

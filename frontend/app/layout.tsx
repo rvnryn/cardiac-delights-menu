@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "@/app/Style/globals.css";
+import "./style/globals.css";
 import ServiceWorkerProvider from "@/app/utils/ServiceWorkerProvider";
 
 const geistSans = Geist({
@@ -67,8 +67,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#fbbf24" }],
-  colorScheme: "light dark",
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#fec402" }],
 };
 
 export default function RootLayout({
@@ -82,7 +81,7 @@ export default function RootLayout({
         <ServiceWorkerProvider>
           <div id="root" className="min-h-screen">
             {/* Main Content */}
-            <main className="flex-1 min-w-0 px-2 sm:px-4 md:px-8 py-4 md:py-8 bg-gradient-to-br from-yellow-600/95 to-yellow-700/95">
+            <main className="flex-1 min-w-0  px-2 sm:px-4 md:px-8 py-4 md:py-8 bg-gradient-to-br from-yellow-600/95 to-yellow-700/95">
               {children}
             </main>
           </div>

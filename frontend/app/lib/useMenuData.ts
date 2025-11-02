@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import useSWR from "swr";
+import { useState, useCallback } from "react";
 
 interface MenuItem {
   dish_name: string;
@@ -7,24 +8,37 @@ interface MenuItem {
   stock_status?: string;
 }
 
-export function useMenuData(category: string) {
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+interface UseMenuDataResult {
+  items: MenuItem[];
+  loading: boolean;
+  error: Error | null;
+  page: number;
+  pageSize: number;
+  total: number | null;
+  setPage: (page: number) => void;
+}
 
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/menu?category=${encodeURIComponent(category)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setItems(data.items || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err);
-        setLoading(false);
-      });
-  }, [category]);
+export function useMenuData(
+  category: string,
+  initialPage = 1,
+  initialPageSize = 20
+): UseMenuDataResult {
+  const [page, setPage] = useState(initialPage);
+  const [pageSize] = useState(initialPageSize);
+  const fetcher = useCallback((url: string) => fetch(url).then(res => res.json()), []);
+  const { data, error, isLoading } = useSWR(
+    `/api/menu?category=${encodeURIComponent(category)}&page=${page}&page_size=${pageSize}`,
+    fetcher,
+    { revalidateOnFocus: true }
+  );
 
-  return { items, loading, error };
+  return {
+    items: data?.items || [],
+    loading: isLoading,
+    error: error ? (error instanceof Error ? error : new Error("Unknown error")) : null,
+    page,
+    pageSize,
+    total: data?.total ?? null,
+    setPage,
+  };
 }
